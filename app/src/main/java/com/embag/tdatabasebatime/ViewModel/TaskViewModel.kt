@@ -87,10 +87,10 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
 
     fun getPriorityText(priority: Int): String {
         return when (priority) {
-            1 -> "اولویت بالا"
-            2 -> "اولویت متوسط"
-            3 -> "اولویت پایین"
-            4 -> "بدون اولویت"
+            1 -> "ضروری"
+            2 -> "مهم"
+            3 -> "فوری"
+            4 -> "عادی"
             else -> "نامشخص"
         }
     }
