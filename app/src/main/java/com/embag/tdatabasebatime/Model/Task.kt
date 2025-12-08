@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter
 data class Task(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val category: String,
+    val category: String="Tasks",
     val title: String,
     val description: String?,
     val priority: Int, // 1=بالاترین, 2, 3, 4

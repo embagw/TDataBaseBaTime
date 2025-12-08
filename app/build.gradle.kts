@@ -71,4 +71,9 @@ dependencies {
     val vNavigation="2.9.6"
     implementation("androidx.navigation:navigation-compose:$vNavigation")
 
+
+//    Date And Time Picker
+    implementation("androidx.compose.material3:material3:1.2.0")
+    implementation("androidx.compose.material3:material3-window-size-class:1.2.0")
+
 }
