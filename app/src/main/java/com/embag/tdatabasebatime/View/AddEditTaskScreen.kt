@@ -236,10 +236,10 @@ fun AddEditTaskScreen(
     val isEditMode = currentTask != null
 
     // State variables
-    var category by remember { mutableStateOf(currentTask?.category ?: "") }
+    var category by remember { mutableStateOf(currentTask?.category ?: "وظایف") }
     var title by remember { mutableStateOf(currentTask?.title ?: "") }
     var description by remember { mutableStateOf(currentTask?.description ?: "") }
-    var priority by remember { mutableStateOf(currentTask?.priority?.toString() ?: "1") }
+    var priority by remember { mutableStateOf(currentTask?.priority?.toString() ?: "4") }
     var status by remember { mutableStateOf(currentTask?.status ?: TaskStatus.NEEDS_DOING) }
 
     // State برای مدیریت DatePicker و TimePicker
