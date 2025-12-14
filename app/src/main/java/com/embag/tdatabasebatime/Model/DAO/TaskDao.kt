@@ -2,11 +2,13 @@ package com.embag.tdatabasebatime.Model.DAO
 
 import androidx.room.*
 import com.embag.tdatabasebatime.Model.Entity.Task
+import com.embag.tdatabasebatime.Model.Entity.TaskWithRelations
 import com.embag.tdatabasebatime.Model.Entity.TaskWithSchedules
 import kotlinx.coroutines.flow.Flow
 
 
 
+/*
 
 
 @Dao
@@ -56,4 +58,38 @@ interface TaskDao {
         WHERE id IN (SELECT taskId FROM task_schedule WHERE scheduleId = :scheduleId)
     """)
     suspend fun getTasksForSchedule(scheduleId: Long): List<Task>
+}
+*/
+
+
+@Dao
+interface TaskDao {
+    @Query("SELECT * FROM tasks ORDER BY priority ASC, dueDate ASC")
+    fun getAllTasks(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    suspend fun getTaskById(taskId: Long): Task?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTask(task: Task): Long
+
+    @Update
+    suspend fun updateTask(task: Task)
+
+    @Delete
+    suspend fun deleteTask(task: Task)
+
+    @Query("DELETE FROM tasks WHERE id = :taskId")
+    suspend fun deleteTaskById(taskId: Long)
+
+    @Query("SELECT * FROM tasks WHERE categoryId = :categoryId ORDER BY priority ASC")
+    fun getTasksByCategory(categoryId: Long): Flow<List<Task>>
+
+    @Transaction
+    @Query("SELECT * FROM tasks")
+    fun getTasksWithRelations(): Flow<List<TaskWithRelations>>
+
+    @Transaction
+    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    suspend fun getTaskWithRelations(taskId: Long): TaskWithRelations?
 }

@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -15,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 import java.time.format.DateTimeFormatter
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +45,7 @@ fun TaskDetailScreen(
                 title = { Text("جزئیات تسک") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -81,8 +83,11 @@ fun TaskDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // دسته‌بندی
-                    DetailRow(title = "دسته‌بندی", value = task.category)
+                    // دسته‌بندی (استفاده از getCategoryName)
+                    DetailRow(
+                        title = "دسته‌بندی",
+                        value = viewModel.getCategoryName(task.categoryId)
+                    )
 
                     // اولویت
                     DetailRow(
@@ -90,7 +95,7 @@ fun TaskDetailScreen(
                         value = viewModel.getPriorityText(task.priority)
                     )
 
-                    // تاریخ مهلت - استفاده از متد جدید formatDueDate
+                    // تاریخ مهلت
                     DetailRow(
                         title = "تاریخ مهلت",
                         value = viewModel.formatDueDate(task.dueDate)
@@ -121,7 +126,6 @@ fun TaskDetailScreen(
         }
     }
 }
-
 @Composable
 fun DetailRow(title: String, value: String) {
     Column(

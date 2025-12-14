@@ -37,7 +37,8 @@ class MainActivity : ComponentActivity() {
                             klass = TaskDatabase::class.java,
                             name = TaskDatabase.DATABASE_NAME
                         )
-                            .addMigrations(TaskDatabase.MIGRATION_1_2)
+                            .addMigrations(TaskDatabase.MIGRATION_2_3) // تغییر به MIGRATION_2_3
+                            .fallbackToDestructiveMigration()
                             .build()
                     }
 
@@ -45,7 +46,8 @@ class MainActivity : ComponentActivity() {
                         TaskRepository(
                             database.taskDao(),
                             database.scheduleDao(),
-                            database.taskScheduleDao()
+                            database.taskScheduleDao(),
+                            database.categoryDao() // اضافه کردن این خط
                         )
                     }
                     val viewModel = remember { TaskViewModel(repository) }
@@ -107,12 +109,48 @@ class MainActivity : ComponentActivity() {
                                 viewModel = viewModel,
                                 onBack = {
                                     navController.popBackStack()
+                                },
+                                onManageCategories = {
+                                    navController.navigate("categoryManagement")
+                                },
+                                onLinkSchedules = {
+                                    navController.navigate("linkTaskToSchedule")
                                 }
                             )
                         }
 
                         composable("addEditSchedule") {
                             AddEditScheduleScreen(
+                                viewModel = viewModel,
+                                onBack = {
+                                    navController.popBackStack()
+                                },
+                                onLinkTasks = {
+                                    navController.navigate("linkScheduleToTask")
+                                }
+                            )
+                        }
+
+                        composable("categoryManagement") {
+                            CategoryManagementScreen(
+                                viewModel = viewModel,
+                                onBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable("linkTaskToSchedule") {
+                            LinkTaskToScheduleScreen(
+                                viewModel = viewModel,
+                                onBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable("linkScheduleToTask") {
+                            LinkScheduleToTaskScreen(
                                 viewModel = viewModel,
                                 onBack = {
                                     navController.popBackStack()

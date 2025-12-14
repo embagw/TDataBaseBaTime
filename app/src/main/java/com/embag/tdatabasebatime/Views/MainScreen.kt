@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
@@ -40,25 +40,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.embag.tdatabasebatime.Model.Entity.ScheduleWithCalculatedPriority
+import com.embag.tdatabasebatime.Model.Entity.ScheduleWithTasks
 import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
-import java.time.format.DateTimeFormatter
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
     viewModel: TaskViewModel,
     onTaskClick: (Task) -> Unit,
-    onScheduleClick: (ScheduleWithCalculatedPriority) -> Unit,
+    onScheduleClick: (ScheduleWithTasks) -> Unit, // تغییر اینجا
     onAddTask: () -> Unit,
-    onAddSchedule: () -> Unit
+    onAddSchedule: () -> Unit,
+    onManageCategories: () -> Unit = {} // اضافه کردن با مقدار پیش‌فرض
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("تسک‌ها", "زمان‌بندی‌ها")
 
-    Scaffold (){padd->
+    Scaffold {padd->
         Column(modifier = Modifier.fillMaxSize().padding(padd)) {
             TabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
@@ -92,14 +94,14 @@ fun MainScreen(
 @Composable
 fun ScheduleListScreen(
     viewModel: TaskViewModel,
-    onScheduleClick: (ScheduleWithCalculatedPriority) -> Unit,
+    onScheduleClick: (ScheduleWithTasks) -> Unit,
     onAddSchedule: () -> Unit
 ) {
-    val schedules by viewModel.schedulesWithPriority.collectAsState()
+    val schedules by viewModel.schedulesWithTasks.collectAsState() // تغییر اینجا
 
-    Scaffold (
+    Scaffold(
         floatingActionButton = {
-            FloatingActionButton (
+            FloatingActionButton(
                 onClick = onAddSchedule,
                 modifier = Modifier.padding(16.dp)
             ) {
@@ -122,16 +124,16 @@ fun ScheduleListScreen(
                 Text("هیچ زمان‌بندی وجود ندارد")
             }
         } else {
-            LazyColumn (
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                itemsIndexed(schedules) { index, schedule ->
-                    ScheduleCard (
-                        scheduleWithPriority = schedule,
+                items(schedules) { schedule ->
+                    ScheduleCard(
+                        scheduleWithTasks = schedule,
                         viewModel = viewModel,
                         onClick = { onScheduleClick(schedule) }
                     )
@@ -144,12 +146,12 @@ fun ScheduleListScreen(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ScheduleCard(
-    scheduleWithPriority: ScheduleWithCalculatedPriority,
+    scheduleWithTasks: ScheduleWithTasks, // تغییر اینجا
     viewModel: TaskViewModel,
     onClick: () -> Unit
 ) {
-    val schedule = scheduleWithPriority.schedule
-    Card (
+    val schedule = scheduleWithTasks.schedule
+    Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
         elevation = CardDefaults.cardElevation(4.dp)
@@ -161,24 +163,25 @@ fun ScheduleCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // زمان شروع و پایان
+                // اطلاعات زمان‌بندی
                 Column {
                     Text(
-                        text = "شروع: ${schedule.startTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = schedule.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "پایان: ${schedule.endTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = viewModel.getScheduleTypeText(schedule.type),
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
 
                 // اولویت
                 AssistChip(
                     onClick = {},
-                    label = { Text(viewModel.getSchedulePriorityText(scheduleWithPriority)) },
+                    label = { Text(viewModel.getSchedulePriorityText(scheduleWithTasks)) },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = when (scheduleWithPriority.calculatedPriority ?: Int.MAX_VALUE) {
+                        containerColor = when (scheduleWithTasks.calculatedPriority) {
                             1 -> MaterialTheme.colorScheme.errorContainer
                             2 -> MaterialTheme.colorScheme.primaryContainer
                             3 -> MaterialTheme.colorScheme.secondaryContainer
@@ -190,26 +193,24 @@ fun ScheduleCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // مدت زمان
+            // جزئیات زمان‌بندی
             Text(
-                text = "مدت زمان: ${schedule.durationMinutes} دقیقه",
+                text = viewModel.getScheduleDetails(schedule),
                 style = MaterialTheme.typography.bodySmall
             )
 
-            // الگوی تکراری
-            schedule.recurrencePattern?.let {
-                Text(
-                    text = "تکرار: $it",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            // تعداد تسک‌های متصل
+            Text(
+                text = "تعداد تسک‌های متصل: ${scheduleWithTasks.tasks.size}",
+                style = MaterialTheme.typography.bodySmall
+            )
 
             // وضعیت فعال
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (schedule.isActive) Icons.Default.CheckCircle else Icons.Default.Close,
+                    imageVector = if (schedule.isActive) Icons.Default.CheckCircle else Icons.Default.Cancel,
                     contentDescription = null,
                     tint = if (schedule.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
