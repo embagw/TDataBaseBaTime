@@ -1,4 +1,4 @@
-package com.embag.tdatabasebatime.View
+package com.embag.tdatabasebatime.Views
 
 /*
 import android.os.Build
@@ -216,13 +216,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.embag.tdatabasebatime.Model.TaskStatus
+import com.embag.tdatabasebatime.Model.Entity.TaskStatus
 //import com.embag.tdatabasebatime.View.components.DatePickerDialog
 //import com.embag.tdatabasebatime.ui.components.TimePickerDialog
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)

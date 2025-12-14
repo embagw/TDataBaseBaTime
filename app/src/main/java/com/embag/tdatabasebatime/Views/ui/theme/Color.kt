@@ -1,4 +1,4 @@
-package com.embag.tdatabasebatime.View.ui.theme
+package com.embag.tdatabasebatime.Views.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,8 +1,7 @@
-package com.embag.tdatabasebatime.View
+package com.embag.tdatabasebatime.Views
 
 import android.os.Build
 import android.os.Bundle
-
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,8 +17,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.embag.tdatabasebatime.Model.TaskDatabase
 import com.embag.tdatabasebatime.Repository.TaskRepository
-import com.embag.tdatabasebatime.View.ui.theme.TDataBaseBaTimeTheme
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
+import com.embag.tdatabasebatime.Views.ui.theme.TDataBaseBaTimeTheme
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -28,7 +27,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TDataBaseBaTimeTheme {
-                Surface (
+                Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
@@ -37,28 +36,44 @@ class MainActivity : ComponentActivity() {
                             context = applicationContext,
                             klass = TaskDatabase::class.java,
                             name = TaskDatabase.DATABASE_NAME
-                        ).build()
+                        )
+                            .addMigrations(TaskDatabase.MIGRATION_1_2)
+                            .build()
                     }
 
-                    val repository = remember { TaskRepository(database.taskDao()) }
+                    val repository = remember {
+                        TaskRepository(
+                            database.taskDao(),
+                            database.scheduleDao(),
+                            database.taskScheduleDao()
+                        )
+                    }
                     val viewModel = remember { TaskViewModel(repository) }
 
                     val navController = rememberNavController()
 
                     NavHost(
                         navController = navController,
-                        startDestination = "taskList"
+                        startDestination = "mainScreen"
                     ) {
-                        composable("taskList") {
-                            TaskListScreen(
+                        composable("mainScreen") {
+                            MainScreen(
                                 viewModel = viewModel,
                                 onTaskClick = { task ->
                                     viewModel.setCurrentTask(task)
                                     navController.navigate("taskDetail")
                                 },
+                                onScheduleClick = { schedule ->
+                                    viewModel.setCurrentSchedule(schedule.schedule)
+                                    navController.navigate("scheduleDetail")
+                                },
                                 onAddTask = {
                                     viewModel.setCurrentTask(null)
                                     navController.navigate("addEditTask")
+                                },
+                                onAddSchedule = {
+                                    viewModel.setCurrentSchedule(null)
+                                    navController.navigate("addEditSchedule")
                                 }
                             )
                         }
@@ -75,8 +90,29 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        composable("scheduleDetail") {
+                            ScheduleDetailScreen(
+                                viewModel = viewModel,
+                                onEdit = {
+                                    navController.navigate("addEditSchedule")
+                                },
+                                onBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
                         composable("addEditTask") {
                             AddEditTaskScreen(
+                                viewModel = viewModel,
+                                onBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable("addEditSchedule") {
+                            AddEditScheduleScreen(
                                 viewModel = viewModel,
                                 onBack = {
                                     navController.popBackStack()
@@ -88,5 +124,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 }

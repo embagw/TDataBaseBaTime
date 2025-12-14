@@ -1,4 +1,4 @@
-package com.embag.tdatabasebatime.View
+package com.embag.tdatabasebatime.Views
 
 
 import android.os.Build

@@ -1,4 +1,4 @@
-package com.embag.tdatabasebatime.Model
+package com.embag.tdatabasebatime.Model.Entity
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -12,12 +12,13 @@ import java.time.format.DateTimeFormatter
 data class Task(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val category: String="Tasks",
+    val category: String = "Tasks",
     val title: String,
-    val description: String?,
+    val description: String? = null,
     val priority: Int, // 1=بالاترین, 2, 3, 4
-    val dueDate: LocalDateTime,
-    val status: TaskStatus
+    val dueDate: LocalDateTime? = null, // تاریخ سررسید اختیاری
+    val status: TaskStatus = TaskStatus.NEEDS_DOING,
+    val estimatedDurationMinutes: Long = 0
 )
 
 enum class TaskStatus {

@@ -1,4 +1,4 @@
-package com.embag.tdatabasebatime.View
+package com.embag.tdatabasebatime.Views
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -15,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 import java.time.format.DateTimeFormatter
-
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,12 +90,10 @@ fun TaskDetailScreen(
                         value = viewModel.getPriorityText(task.priority)
                     )
 
-                    // تاریخ مهلت
+                    // تاریخ مهلت - استفاده از متد جدید formatDueDate
                     DetailRow(
                         title = "تاریخ مهلت",
-                        value = task.dueDate.format(
-                            DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
-                        )
+                        value = viewModel.formatDueDate(task.dueDate)
                     )
 
                     // وضعیت

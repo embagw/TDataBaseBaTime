@@ -1,5 +1,7 @@
-package com.embag.tdatabasebatime.View
+package com.embag.tdatabasebatime.Views
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,10 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.embag.tdatabasebatime.Model.Task
+import com.embag.tdatabasebatime.Model.Entity.Task
+import com.embag.tdatabasebatime.Model.Entity.TaskStatus
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 import java.time.format.DateTimeFormatter
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +71,7 @@ fun TaskListScreen(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TaskItem(
     task: Task,
@@ -133,17 +136,17 @@ fun TaskItem(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // تاریخ مهلت
+                // تاریخ مهلت - استفاده از متد جدید formatDueDate
                 Text(
-                    text = "مهلت: ${task.dueDate.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))}",
+                    text = "مهلت: ${viewModel.formatDueDate(task.dueDate)}",
                     style = MaterialTheme.typography.labelSmall
                 )
 
                 // وضعیت
                 Badge(
                     containerColor = when (task.status) {
-                        com.embag.tdatabasebatime.Model.TaskStatus.DONE -> MaterialTheme.colorScheme.primaryContainer
-                        com.embag.tdatabasebatime.Model.TaskStatus.CANCELLED -> MaterialTheme.colorScheme.errorContainer
+                        TaskStatus.DONE -> MaterialTheme.colorScheme.primaryContainer
+                        TaskStatus.CANCELLED -> MaterialTheme.colorScheme.errorContainer
                         else -> MaterialTheme.colorScheme.secondaryContainer
                     }
                 ) {

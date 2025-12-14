@@ -1,6 +1,5 @@
-package com.embag.tdatabasebatime.View.ui.theme
+package com.embag.tdatabasebatime.Views.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
