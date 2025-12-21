@@ -1,5 +1,6 @@
 package com.embag.tdatabasebatime.Views
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
@@ -47,6 +48,10 @@ import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 
 
+
+
+
+@SuppressLint("RememberReturnType")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +66,19 @@ fun LinkScheduleToTaskScreen(
     // تسک‌های انتخاب شده
     var selectedTaskIds by remember {
         mutableStateOf(tasksForCurrentSchedule.map { it.id }.toMutableSet())
+    }
+
+    // فیلتر تسک‌ها بر اساس دسته‌بندی زمان‌بندی
+    val filteredTasks = remember(currentSchedule, availableTasks) {
+        if (currentSchedule?.categoryId == null) {
+            // اگر زمان‌بندی دسته‌بندی ندارد، همه تسک‌ها را نشان بده
+            availableTasks
+        } else {
+            // فقط تسک‌هایی که دسته‌بندی‌شان با زمان‌بندی یکسان است
+            availableTasks.filter { task ->
+                task.categoryId == currentSchedule!!.categoryId
+            }
+        }
     }
 
     Scaffold(

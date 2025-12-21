@@ -146,6 +146,7 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
     }
 
     // متدهای Task
+    @RequiresApi(Build.VERSION_CODES.O)
     fun createTask(
         categoryId: Long?,
         title: String,
@@ -169,6 +170,7 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun updateTask(
         id: Long,
         categoryId: Long?,
@@ -222,6 +224,7 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
     }
 
     // متدهای Schedule
+    @RequiresApi(Build.VERSION_CODES.O)
     fun createSchedule(
         type: ScheduleType,
         title: String,
@@ -362,4 +365,45 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
             else -> "بدون تسک"
         }
     }
+    fun getSchedulePriorityWithDefault(scheduleWithTasks: ScheduleWithTasks): Int {
+        return scheduleWithTasks.calculatedPriority
+    }
+
+    fun getSchedulePriorityTextWithDefault(scheduleWithTasks: ScheduleWithTasks): String {
+        val priority = scheduleWithTasks.calculatedPriority
+        return when {
+            priority <= 1 -> "ضروری"
+            priority == 2 -> "مهم"
+            priority == 3 -> "فوری"
+            else -> "عادی" // پیش‌فرض برای 4 و بالاتر
+        }
+    }
+    // متدهای جدید برای ایجاد Schedule با categoryId
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun createSchedule(
+        categoryId: Long?,
+        type: ScheduleType,
+        title: String,
+        description: String? = null,
+        scheduledDateTime: LocalDateTime? = null,
+        estimatedMinutes: Long? = null,
+        count: Int? = null,
+        eventDate: LocalDate? = null
+    ) {
+        viewModelScope.launch {
+            val schedule = Schedule(
+                categoryId = categoryId,
+                type = type,
+                title = title,
+                description = description,
+                scheduledDateTime = scheduledDateTime,
+                estimatedMinutes = estimatedMinutes,
+                count = count,
+                eventDate = eventDate
+            )
+            repository.insertSchedule(schedule)
+        }
+    }
+
+
 }

@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter
         )
     ]
 )
-data class Task(
+data class Task @RequiresApi(Build.VERSION_CODES.O) constructor(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
 
@@ -33,13 +33,12 @@ data class Task(
     val title: String,
     val description: String? = null,
     val priority: Int, // 1=بالاترین, 2, 3, 4
-    val dueDate: LocalDateTime? = null,
+    val dueDate: LocalDateTime? = null, // تغییر به nullable
     val status: TaskStatus = TaskStatus.NEEDS_DOING,
     val estimatedDurationMinutes: Long = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
 )
-
 
 enum class TaskStatus {
     NEEDS_DOING, DONE, CANCELLED

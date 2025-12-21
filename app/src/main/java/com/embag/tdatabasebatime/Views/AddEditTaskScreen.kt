@@ -42,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 
 import androidx.compose.material3.TopAppBar
@@ -55,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.test.services.storage.file.PropertyFile.Column
@@ -80,14 +82,15 @@ fun AddEditTaskScreen(
 
     // State variables
     var selectedCategoryId by remember {
-        mutableStateOf(currentTask?.categoryId ?: categories.firstOrNull()?.id)
+        mutableStateOf(currentTask?.categoryId ?: categories.firstOrNull { it.name == "اصلی" }?.id)
     }
     var title by remember { mutableStateOf(currentTask?.title ?: "") }
     var description by remember { mutableStateOf(currentTask?.description ?: "") }
     var priority by remember { mutableStateOf(currentTask?.priority?.toString() ?: "4") }
     var status by remember { mutableStateOf(currentTask?.status ?: TaskStatus.NEEDS_DOING) }
 
-    // State برای مدیریت DatePicker و TimePicker
+    // State برای مدیریت تاریخ و زمان (nullable)
+    var hasDueDate by remember { mutableStateOf(currentTask?.dueDate != null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
@@ -128,7 +131,7 @@ fun AddEditTaskScreen(
                 title = { Text(if (isEditMode) "ویرایش تسک" else "ایجاد تسک جدید") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -267,74 +270,104 @@ fun AddEditTaskScreen(
                     )
 
                     // بخش انتخاب تاریخ و زمان
-                    Text(
-                        text = "تاریخ و زمان مهلت:",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Card(
+                        elevation = CardDefaults.cardElevation(4.dp)
                     ) {
-                        // نمایش تاریخ و زمان انتخاب شده
-                        Column {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(bottom = 4.dp)
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Icon(
-                                    Icons.Default.DateRange,
-                                    contentDescription = "Date",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = selectedDate.format(dateFormatter),
-                                    style = MaterialTheme.typography.bodyMedium
+                                    text = "تاریخ مهلت (اختیاری):",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Switch(
+                                    checked = hasDueDate,
+                                    onCheckedChange = { hasDueDate = it }
                                 )
                             }
 
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Build,
-                                    contentDescription = "Time",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+                            if (hasDueDate) {
+                                // انتخاب تاریخ و زمان
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // نمایش تاریخ و زمان انتخاب شده
+                                    Column {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DateRange,
+                                                contentDescription = "Date",
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = selectedDate.format(dateFormatter),
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Build,
+                                                contentDescription = "Time",
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = selectedTime.format(timeFormatter),
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+                                    }
+
+                                    // دکمه‌های انتخاب تاریخ و زمان
+                                    Row {
+                                        OutlinedButton(
+                                            onClick = { showDatePicker = true },
+                                            modifier = Modifier.padding(end = 8.dp)
+                                        ) {
+                                            Text("تاریخ")
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = { showTimePicker = true }
+                                        ) {
+                                            Text("زمان")
+                                        }
+                                    }
+                                }
+
+                                // نمایش تاریخ و زمان ترکیبی
                                 Text(
-                                    text = selectedTime.format(timeFormatter),
-                                    style = MaterialTheme.typography.bodyMedium
+                                    text = "مهلت نهایی: ${LocalDateTime.of(selectedDate, selectedTime).format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
-                            }
-                        }
-
-                        // دکمه‌های انتخاب تاریخ و زمان
-                        Row {
-                            OutlinedButton(
-                                onClick = { showDatePicker = true },
-                                modifier = Modifier.padding(end = 8.dp)
-                            ) {
-                                Text("تاریخ")
-                            }
-
-                            OutlinedButton(
-                                onClick = { showTimePicker = true }
-                            ) {
-                                Text("زمان")
+                            } else {
+                                Text(
+                                    text = "تاریخ مهلت تنظیم نشده است",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontStyle = FontStyle.Italic
+                                )
                             }
                         }
                     }
-
-                    // نمایش تاریخ و زمان ترکیبی
-                    Text(
-                        text = "مهلت نهایی: ${LocalDateTime.of(selectedDate, selectedTime).format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
 
                     // وضعیت (در حالت ویرایش)
                     if (isEditMode) {
@@ -436,12 +469,17 @@ fun AddEditTaskScreen(
                 }
             }
 
+
             // دکمه ذخیره
-            Button (
+            Button(
                 onClick = {
                     if (title.isNotEmpty() && priority.toIntOrNull() in 1..4) {
-                        // ترکیب تاریخ و زمان انتخاب شده
-                        val finalDueDate = LocalDateTime.of(selectedDate, selectedTime)
+                        // تاریخ مهلت فقط اگر کاربر انتخاب کرده باشد
+                        val finalDueDate = if (hasDueDate) {
+                            LocalDateTime.of(selectedDate, selectedTime)
+                        } else {
+                            null
+                        }
 
                         if (isEditMode) {
                             viewModel.updateTask(

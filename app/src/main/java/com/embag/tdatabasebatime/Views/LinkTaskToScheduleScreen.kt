@@ -1,6 +1,7 @@
 package com.embag.tdatabasebatime.Views
 
 
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
@@ -47,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import com.embag.tdatabasebatime.Model.Entity.Schedule
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 
-
+@SuppressLint("RememberReturnType")
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,13 +65,26 @@ fun LinkTaskToScheduleScreen(
         mutableStateOf(schedulesForCurrentTask.map { it.id }.toMutableSet())
     }
 
+    // فیلتر زمان‌بندی‌ها بر اساس دسته‌بندی
+    val filteredSchedules = remember(currentTask, availableSchedules) {
+        if (currentTask?.categoryId == null) {
+            // اگر تسک دسته‌بندی ندارد، همه زمان‌بندی‌ها را نشان بده
+            availableSchedules
+        } else {
+            // فقط زمان‌بندی‌هایی که یا دسته‌بندی ندارند یا دسته‌بندی‌شان با تسک یکسان است
+            availableSchedules.filter { schedule ->
+                schedule.categoryId == null || schedule.categoryId == currentTask!!.categoryId
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("اتصال تسک به زمان‌بندی") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -137,13 +151,13 @@ fun LinkTaskToScheduleScreen(
                 }
             }
 
-            // لیست زمان‌بندی‌ها
-            LazyColumn (
+            // لیست زمان‌بندی‌ها (فیلتر شده)
+            LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (availableSchedules.isEmpty()) {
+                if (filteredSchedules.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier.fillMaxWidth(),
@@ -159,10 +173,12 @@ fun LinkTaskToScheduleScreen(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text("هیچ زمان‌بندی‌ای وجود ندارد")
+                                Text("هیچ زمان‌بندی‌ای برای این دسته‌بندی وجود ندارد")
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "ابتدا یک زمان‌بندی ایجاد کنید",
+                                    text = currentTask?.categoryId?.let {
+                                        "برای دسته‌بندی '${viewModel.getCategoryName(it)}'"
+                                    } ?: "برای دسته‌بندی نامشخص",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -170,17 +186,20 @@ fun LinkTaskToScheduleScreen(
                         }
                     }
                 } else {
-                    items(availableSchedules) { schedule ->
+                    items(filteredSchedules) { schedule ->
                         ScheduleSelectionItem(
                             schedule = schedule,
                             isSelected = selectedScheduleIds.contains(schedule.id),
                             viewModel = viewModel,
                             onToggle = {
-                                if (selectedScheduleIds.contains(schedule.id)) {
-                                    selectedScheduleIds.remove(schedule.id)
+                                // اصلاح باگ انتخاب
+                                val newSet = selectedScheduleIds.toMutableSet()
+                                if (newSet.contains(schedule.id)) {
+                                    newSet.remove(schedule.id)
                                 } else {
-                                    selectedScheduleIds.add(schedule.id)
+                                    newSet.add(schedule.id)
                                 }
+                                selectedScheduleIds = newSet
                             }
                         )
                     }
@@ -190,6 +209,7 @@ fun LinkTaskToScheduleScreen(
     }
 }
 
+// اصلاح ScheduleSelectionItem برای رفع باگ
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ScheduleSelectionItem(
@@ -236,14 +256,11 @@ fun ScheduleSelectionItem(
                     style = MaterialTheme.typography.bodySmall
                 )
 
-                schedule.description?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = "دسته‌بندی: ${viewModel.getCategoryName(schedule.categoryId)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

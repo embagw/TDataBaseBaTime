@@ -1,7 +1,9 @@
 package com.embag.tdatabasebatime.Views
 
+import android.app.AlertDialog
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,21 +26,32 @@ import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DisplayMode
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,14 +60,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.embag.tdatabasebatime.Model.Entity.Schedule
 import com.embag.tdatabasebatime.Model.Entity.ScheduleType
 import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -67,8 +88,12 @@ fun AddEditScheduleScreen(
     val currentSchedule by viewModel.currentSchedule.collectAsState()
     val isEditMode = currentSchedule != null
     val tasksForCurrentSchedule by viewModel.tasksForCurrentSchedule.collectAsState()
+    val categories by viewModel.categories.collectAsState()
 
     // State variables
+    var selectedCategoryId by remember {
+        mutableStateOf(currentSchedule?.categoryId ?: categories.firstOrNull { it.name == "اصلی" }?.id)
+    }
     var scheduleType by remember {
         mutableStateOf(currentSchedule?.type ?: ScheduleType.SCHEDULED)
     }
@@ -77,7 +102,7 @@ fun AddEditScheduleScreen(
 
     // State برای انواع مختلف زمان‌بندی
     var scheduledDateTime by remember {
-        mutableStateOf(currentSchedule?.scheduledDateTime ?: LocalDateTime.now().plusHours(1))
+        mutableStateOf(currentSchedule?.scheduledDateTime ?: LocalDateTime.now())
     }
     var estimatedMinutes by remember {
         mutableStateOf(currentSchedule?.estimatedMinutes?.toString() ?: "60")
@@ -129,6 +154,83 @@ fun AddEditScheduleScreen(
                         modifier = Modifier.fillMaxWidth(),
                         isError = title.isEmpty()
                     )
+
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        var expanded by remember { mutableStateOf(false) }
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            ExposedDropdownMenuBox(
+                                expanded = expanded,
+                                onExpandedChange = { expanded = !expanded }
+                            ) {
+                                OutlinedTextField(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(/*MenuAnchorType.Dropdown*/),
+                                    readOnly = true,
+                                    value = categories.find { it.id == selectedCategoryId }?.name ?: "بدون دسته‌بندی",
+                                    onValueChange = {},
+                                    label = { Text("دسته‌بندی") },
+                                    leadingIcon = {
+                                        if (selectedCategoryId != null) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(20.dp)
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(Color(android.graphics.Color.parseColor(
+                                                        viewModel.getCategoryColor(selectedCategoryId)
+                                                    )))
+                                            )
+                                        }
+                                    },
+                                    trailingIcon = {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                                    }
+                                )
+
+                                ExposedDropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("بدون دسته‌بندی") },
+                                        onClick = {
+                                            selectedCategoryId = null
+                                            expanded = false
+                                        }
+                                    )
+                                    categories.forEach { category ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(20.dp)
+                                                            .clip(RoundedCornerShape(4.dp))
+                                                            .background(Color(android.graphics.Color.parseColor(category.color ?: "#9E9E9E")))
+                                                            .padding(end = 8.dp)
+                                                    )
+                                                    Text(category.name)
+                                                }
+                                            },
+                                            onClick = {
+                                                selectedCategoryId = category.id
+                                                expanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+
 
                     // توضیحات
                     OutlinedTextField(
@@ -268,7 +370,8 @@ fun AddEditScheduleScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = scheduledDateTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")),
+                                        text = /*"${LocalDateTime.of(scheduledDateTime).format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))}"*/
+                                                scheduledDateTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
@@ -278,6 +381,7 @@ fun AddEditScheduleScreen(
                                 ) {
                                     Text("انتخاب زمان")
                                 }
+
                             }
                         }
 
@@ -343,6 +447,8 @@ fun AddEditScheduleScreen(
                                 ) {
                                     Text("انتخاب تاریخ")
                                 }
+
+
                             }
                         }
                     }
@@ -422,25 +528,29 @@ fun AddEditScheduleScreen(
                 }
             }
 
+
             // دکمه ذخیره
+            // در دکمه ذخیره، categoryId را اضافه کنید:
             Button(
                 onClick = {
                     when (scheduleType) {
                         ScheduleType.SCHEDULED -> {
                             if (title.isNotEmpty()) {
+                                val schedule = Schedule(
+                                    id = if (isEditMode) currentSchedule!!.id else 0,
+                                    categoryId = selectedCategoryId,
+                                    type = scheduleType,
+                                    title = title,
+                                    description = description.ifBlank { null },
+                                    scheduledDateTime = scheduledDateTime,
+                                    isActive = if (isEditMode) currentSchedule?.isActive ?: true else true
+                                )
+
                                 if (isEditMode) {
-                                    viewModel.updateSchedule(
-                                        Schedule(
-                                            id = currentSchedule!!.id,
-                                            type = scheduleType,
-                                            title = title,
-                                            description = description.ifBlank { null },
-                                            scheduledDateTime = scheduledDateTime,
-                                            isActive = currentSchedule?.isActive ?: true
-                                        )
-                                    )
+                                    viewModel.updateSchedule(schedule)
                                 } else {
                                     viewModel.createSchedule(
+                                        categoryId = selectedCategoryId,
                                         type = scheduleType,
                                         title = title,
                                         description = description.ifBlank { null },
@@ -452,19 +562,21 @@ fun AddEditScheduleScreen(
                         }
                         ScheduleType.ESTIMATED -> {
                             if (title.isNotEmpty() && estimatedMinutes.isNotEmpty() && estimatedMinutes.toLongOrNull() != null) {
+                                val schedule = Schedule(
+                                    id = if (isEditMode) currentSchedule!!.id else 0,
+                                    categoryId = selectedCategoryId,
+                                    type = scheduleType,
+                                    title = title,
+                                    description = description.ifBlank { null },
+                                    estimatedMinutes = estimatedMinutes.toLong(),
+                                    isActive = if (isEditMode) currentSchedule?.isActive ?: true else true
+                                )
+
                                 if (isEditMode) {
-                                    viewModel.updateSchedule(
-                                        Schedule(
-                                            id = currentSchedule!!.id,
-                                            type = scheduleType,
-                                            title = title,
-                                            description = description.ifBlank { null },
-                                            estimatedMinutes = estimatedMinutes.toLong(),
-                                            isActive = currentSchedule?.isActive ?: true
-                                        )
-                                    )
+                                    viewModel.updateSchedule(schedule)
                                 } else {
                                     viewModel.createSchedule(
+                                        categoryId = selectedCategoryId,
                                         type = scheduleType,
                                         title = title,
                                         description = description.ifBlank { null },
@@ -476,20 +588,22 @@ fun AddEditScheduleScreen(
                         }
                         ScheduleType.COUNT -> {
                             if (title.isNotEmpty() && count.isNotEmpty() && count.toIntOrNull() != null) {
+                                val schedule = Schedule(
+                                    id = if (isEditMode) currentSchedule!!.id else 0,
+                                    categoryId = selectedCategoryId,
+                                    type = scheduleType,
+                                    title = title,
+                                    description = description.ifBlank { null },
+                                    count = count.toInt(),
+                                    currentCount = if (isEditMode) currentSchedule?.currentCount ?: 0 else 0,
+                                    isActive = if (isEditMode) currentSchedule?.isActive ?: true else true
+                                )
+
                                 if (isEditMode) {
-                                    viewModel.updateSchedule(
-                                        Schedule(
-                                            id = currentSchedule!!.id,
-                                            type = scheduleType,
-                                            title = title,
-                                            description = description.ifBlank { null },
-                                            count = count.toInt(),
-                                            currentCount = currentSchedule?.currentCount ?: 0,
-                                            isActive = currentSchedule?.isActive ?: true
-                                        )
-                                    )
+                                    viewModel.updateSchedule(schedule)
                                 } else {
                                     viewModel.createSchedule(
+                                        categoryId = selectedCategoryId,
                                         type = scheduleType,
                                         title = title,
                                         description = description.ifBlank { null },
@@ -501,19 +615,21 @@ fun AddEditScheduleScreen(
                         }
                         ScheduleType.EVENT -> {
                             if (title.isNotEmpty()) {
+                                val schedule = Schedule(
+                                    id = if (isEditMode) currentSchedule!!.id else 0,
+                                    categoryId = selectedCategoryId,
+                                    type = scheduleType,
+                                    title = title,
+                                    description = description.ifBlank { null },
+                                    eventDate = eventDate,
+                                    isActive = if (isEditMode) currentSchedule?.isActive ?: true else true
+                                )
+
                                 if (isEditMode) {
-                                    viewModel.updateSchedule(
-                                        Schedule(
-                                            id = currentSchedule!!.id,
-                                            type = scheduleType,
-                                            title = title,
-                                            description = description.ifBlank { null },
-                                            eventDate = eventDate,
-                                            isActive = currentSchedule?.isActive ?: true
-                                        )
-                                    )
+                                    viewModel.updateSchedule(schedule)
                                 } else {
                                     viewModel.createSchedule(
+                                        categoryId = selectedCategoryId,
                                         type = scheduleType,
                                         title = title,
                                         description = description.ifBlank { null },
@@ -587,28 +703,176 @@ fun DateTimePickerDialog(
     onDateTimeSelected: (LocalDateTime) -> Unit,
     onDismiss: () -> Unit
 ) {
+
+
+
+/*
+
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis =
+            initialDateTime
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+    )
+
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialDateTime.hour,
+        initialMinute = initialDateTime.minute,
+        is24Hour = true
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("انتخاب تاریخ و ساعت") },
+
+        text = {
+            Column(
+
+            ) {
+                DatePicker(state = datePickerState, modifier = Modifier.height(300.dp))
+
+                HorizontalDivider()
+
+                TimePicker(state = timePickerState, modifier = Modifier.height(500.dp))
+            }
+        },
+
+        confirmButton = {
+            TextButton (
+                onClick = {
+                    val selectedDateMillis = datePickerState.selectedDateMillis
+                    if (selectedDateMillis != null) {
+                        val selectedDate = Instant
+                            .ofEpochMilli(selectedDateMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+
+                        val finalDateTime = LocalDateTime.of(
+                            selectedDate,
+                            LocalTime.of(
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
+                        )
+
+                        onDateTimeSelected(finalDateTime)
+                    }
+                }
+            ) {
+                Text("تأیید")
+            }
+        },
+
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("لغو")
+            }
+        }
+    )
+*/
+
+
+
+
+
+
     var selectedDate by remember { mutableStateOf(initialDateTime.toLocalDate()) }
     var selectedTime by remember { mutableStateOf(initialDateTime.toLocalTime()) }
     var showDatePicker by remember { mutableStateOf(true) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis =
+            initialDateTime
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+    )
 
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDateSelected = { date ->
-                selectedDate = date
-                showDatePicker = false
-            },
-            onDismiss = onDismiss,
-            initialDate = selectedDate
-        )
-    } else {
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialDateTime.hour,
+        initialMinute = initialDateTime.minute,
+        is24Hour = true
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("انتخاب تاریخ و ساعت", fontSize = 16.sp) },
+        text = {
+            Column(
+            ) {
+                DatePicker(  title = null,
+                     state = datePickerState, modifier = Modifier)
+
+                HorizontalDivider()
+
+                TimePicker(state = timePickerState, modifier = Modifier)
+            }
+        },
+
+        confirmButton = {
+            TextButton (
+                onClick = {
+                    val selectedDateMillis = datePickerState.selectedDateMillis
+                    if (selectedDateMillis != null) {
+                        val selectedDate = Instant
+                            .ofEpochMilli(selectedDateMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+
+                        val finalDateTime = LocalDateTime.of(
+                            selectedDate,
+                            LocalTime.of(
+                                timePickerState.hour,
+                                timePickerState.minute
+                            )
+                        )
+
+                        onDateTimeSelected(finalDateTime)
+                    }
+                }
+            ) {
+                Text("تأیید")
+            }
+        },
+
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("لغو")
+            }
+        }
+    )
+
+
+
+
+    /*if (showTimePicker) {
         TimePickerDialog(
+
             onTimeSelected = { time ->
                 selectedTime = time
                 val finalDateTime = LocalDateTime.of(selectedDate, selectedTime)
                 onDateTimeSelected(finalDateTime)
+                showTimePicker=false
             },
             onDismiss = onDismiss,
             initialTime = selectedTime
         )
     }
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDateSelected = { date ->
+                selectedDate = date
+                *//*val DateTime = LocalDateTime.of(selectedDate, selectedTime)
+                onDateTimeSelected(DateTime)*//*
+                showDatePicker = false
+
+
+            },
+            onDismiss = onDismiss,
+            initialDate = selectedDate
+        )
+    }*/
+
 }
