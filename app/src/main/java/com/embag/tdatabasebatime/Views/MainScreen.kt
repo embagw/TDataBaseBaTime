@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AssistChip
@@ -27,6 +28,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -47,6 +49,7 @@ import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
@@ -55,13 +58,29 @@ fun MainScreen(
     onScheduleClick: (ScheduleWithTasks) -> Unit, // تغییر اینجا
     onAddTask: () -> Unit,
     onAddSchedule: () -> Unit,
-    onManageCategories: () -> Unit = {} // اضافه کردن با مقدار پیش‌فرض
+    onManageCategories: () -> Unit = {}, // اضافه کردن با مقدار پیش‌فرض
+    onBackupRestore: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("تسک‌ها", "زمان‌بندی‌ها")
 
-    Scaffold {padd->
-        Column(modifier = Modifier.fillMaxSize().padding(padd)) {
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("مدیریت تسک‌ها") },
+                actions = {
+                    IconButton(onClick = onBackupRestore) {
+                        Icon(Icons.Default.Backup, contentDescription = "Backup")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
             TabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -78,7 +97,6 @@ fun MainScreen(
                     onTaskClick = onTaskClick,
                     onAddTask = onAddTask
                 )
-
                 1 -> ScheduleListScreen(
                     viewModel = viewModel,
                     onScheduleClick = onScheduleClick,
@@ -143,10 +161,10 @@ fun ScheduleListScreen(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
+@RequiresApi(Build.VERSION_CODES.O)
 fun ScheduleCard(
-    scheduleWithTasks: ScheduleWithTasks, // تغییر اینجا
+    scheduleWithTasks: ScheduleWithTasks,
     viewModel: TaskViewModel,
     onClick: () -> Unit
 ) {
@@ -174,12 +192,20 @@ fun ScheduleCard(
                         text = viewModel.getScheduleTypeText(schedule.type),
                         style = MaterialTheme.typography.bodySmall
                     )
+                    Text(
+                        text = viewModel.getScheduleDetails(schedule),
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
 
                 // اولویت
                 AssistChip(
                     onClick = {},
-                    label = { Text(viewModel.getSchedulePriorityText(scheduleWithTasks)) },
+                    label = {
+                        Text(
+                            viewModel.getSchedulePriorityTextWithDefault(scheduleWithTasks)
+                        )
+                    },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = when (scheduleWithTasks.calculatedPriority) {
                             1 -> MaterialTheme.colorScheme.errorContainer
@@ -192,12 +218,6 @@ fun ScheduleCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-
-            // جزئیات زمان‌بندی
-            Text(
-                text = viewModel.getScheduleDetails(schedule),
-                style = MaterialTheme.typography.bodySmall
-            )
 
             // تعداد تسک‌های متصل
             Text(
@@ -221,5 +241,4 @@ fun ScheduleCard(
                 )
             }
         }
-    }
-}
+    }}

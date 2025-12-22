@@ -47,10 +47,10 @@ class MainActivity : ComponentActivity() {
                             database.taskDao(),
                             database.scheduleDao(),
                             database.taskScheduleDao(),
-                            database.categoryDao() // اضافه کردن این خط
+                            database.categoryDao()
                         )
                     }
-                    val viewModel = remember { TaskViewModel(repository) }
+                    val viewModel = remember { TaskViewModel(repository, applicationContext) }
 
                     val navController = rememberNavController()
 
@@ -76,6 +76,9 @@ class MainActivity : ComponentActivity() {
                                 onAddSchedule = {
                                     viewModel.setCurrentSchedule(null)
                                     navController.navigate("addEditSchedule")
+                                },
+                                onBackupRestore = {
+                                    navController.navigate("backupRestore")
                                 }
                             )
                         }
@@ -123,7 +126,12 @@ class MainActivity : ComponentActivity() {
                             AddEditScheduleScreen(
                                 viewModel = viewModel,
                                 onBack = {
+                                    // به mainScreen برگرد اما تب زمان‌بندی‌ها را نشان بده
                                     navController.popBackStack()
+                                    // یا اگر می‌خواهید به mainScreen برگردید:
+                                    // navController.navigate("mainScreen") {
+                                    //     popUpTo("mainScreen") { inclusive = true }
+                                    // }
                                 },
                                 onLinkTasks = {
                                     navController.navigate("linkScheduleToTask")
@@ -151,6 +159,14 @@ class MainActivity : ComponentActivity() {
 
                         composable("linkScheduleToTask") {
                             LinkScheduleToTaskScreen(
+                                viewModel = viewModel,
+                                onBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                        composable("backupRestore") {
+                            BackupRestoreScreen(
                                 viewModel = viewModel,
                                 onBack = {
                                     navController.popBackStack()

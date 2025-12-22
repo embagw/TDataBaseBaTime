@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import com.embag.tdatabasebatime.Model.Entity.ScheduleType
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,19 +100,50 @@ fun ScheduleDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // دسته‌بندی
+                    DetailRow(
+                        title = "دسته‌بندی",
+                        value = viewModel.getCategoryName(schedule.categoryId)
+                    )
+
                     // نوع زمان‌بندی
                     DetailRow(
                         title = "نوع زمان‌بندی",
                         value = viewModel.getScheduleTypeText(schedule.type)
                     )
 
+                    // تاریخ زمان‌بندی (برای همه انواع)
+                    schedule.scheduleDate?.let { date ->
+                        DetailRow(
+                            title = "تاریخ",
+                            value = date.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+                        )
+                    }
+
                     // جزئیات بر اساس نوع
                     when (schedule.type) {
                         ScheduleType.SCHEDULED -> {
-                            schedule.scheduledDateTime?.let { dateTime ->
+                            schedule.startTime?.let { startTime ->
                                 DetailRow(
-                                    title = "زمان برنامه‌ریزی شده",
-                                    value = dateTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))
+                                    title = "ساعت شروع",
+                                    value = startTime.format(DateTimeFormatter.ofPattern("HH:mm"))
+                                )
+                            }
+                            schedule.endTime?.let { endTime ->
+                                DetailRow(
+                                    title = "ساعت پایان",
+                                    value = endTime.format(DateTimeFormatter.ofPattern("HH:mm"))
+                                )
+                            }
+                            // نمایش مدت زمان
+                            if (schedule.startTime != null && schedule.endTime != null) {
+                                val duration = ChronoUnit.MINUTES.between(
+                                    schedule.startTime,
+                                    schedule.endTime
+                                )
+                                DetailRow(
+                                    title = "مدت زمان",
+                                    value = "$duration دقیقه"
                                 )
                             }
                         }
@@ -131,12 +164,8 @@ fun ScheduleDetailScreen(
                             }
                         }
                         ScheduleType.EVENT -> {
-                            schedule.eventDate?.let { date ->
-                                DetailRow(
-                                    title = "تاریخ رویداد",
-                                    value = date.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
-                                )
-                            }
+                            // برای رویداد فقط تاریخ را نشان می‌دهیم
+                            // هیچ کار خاصی نیاز نیست، قبلاً تاریخ نشان داده شده
                         }
                     }
 
@@ -164,3 +193,20 @@ fun ScheduleDetailScreen(
         }
     }
 }
+
+/*@Composable
+fun DetailRow(title: String, value: String) {
+    Column(
+        modifier = Modifier.padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}*/

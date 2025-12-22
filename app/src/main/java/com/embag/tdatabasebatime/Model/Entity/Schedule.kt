@@ -7,9 +7,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Entity(tableName = "schedules")
-data class Schedule @RequiresApi(Build.VERSION_CODES.O) constructor(
+data class Schedule(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
 
@@ -19,16 +20,16 @@ data class Schedule @RequiresApi(Build.VERSION_CODES.O) constructor(
     @ColumnInfo(name = "type", typeAffinity = ColumnInfo.TEXT)
     val type: ScheduleType,
 
-    // برای نوع SCHEDULED
+    // تاریخ زمان‌بندی (برای همه انواع)
+    @ColumnInfo(name = "scheduleDate")
+    val scheduleDate: LocalDate? = null,
 
-    @ColumnInfo(name = "startDateTime")
-    val startDateTime: LocalDateTime? = null,
+    // ساعت شروع و پایان (فقط برای SCHEDULED)
+    @ColumnInfo(name = "startTime")
+    val startTime: LocalTime? = null,
 
-    @ColumnInfo(name = "endDateTime")
-    val endDateTime: LocalDateTime? = null,
-
-    @ColumnInfo(name = "scheduledDateTime")
-    val scheduledDateTime: LocalDateTime? = null,
+    @ColumnInfo(name = "endTime")
+    val endTime: LocalTime? = null,
 
     // برای نوع ESTIMATED
     @ColumnInfo(name = "estimatedMinutes")
@@ -40,10 +41,6 @@ data class Schedule @RequiresApi(Build.VERSION_CODES.O) constructor(
 
     @ColumnInfo(name = "currentCount", defaultValue = "0")
     val currentCount: Int = 0,
-
-    // برای نوع EVENT
-    @ColumnInfo(name = "eventDate")
-    val eventDate: LocalDate? = null,
 
     @ColumnInfo(name = "title")
     val title: String,

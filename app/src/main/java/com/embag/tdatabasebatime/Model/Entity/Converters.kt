@@ -7,6 +7,7 @@ import com.embag.tdatabasebatime.Model.Entity.ScheduleType
 import com.embag.tdatabasebatime.Model.Entity.TaskStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class Converters {
@@ -52,5 +53,17 @@ class Converters {
     @TypeConverter
     fun toLocalDate(value: String?): LocalDate? {
         return value?.let { LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE) }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @TypeConverter
+    fun fromLocalTime(time: LocalTime?): String? {
+        return time?.format(DateTimeFormatter.ISO_LOCAL_TIME)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @TypeConverter
+    fun toLocalTime(value: String?): LocalTime? {
+        return value?.let { LocalTime.parse(it, DateTimeFormatter.ISO_LOCAL_TIME) }
     }
 }

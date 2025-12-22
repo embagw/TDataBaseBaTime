@@ -1,9 +1,11 @@
 package com.embag.tdatabasebatime.ViewModel
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.embag.tdatabasebatime.Model.BackUP.BackupManager
 import com.embag.tdatabasebatime.Model.Entity.Category
 import com.embag.tdatabasebatime.Model.Entity.CategoryWithTaskCount
 import com.embag.tdatabasebatime.Model.Entity.Schedule
@@ -18,11 +20,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
-class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
+class TaskViewModel(private val repository: TaskRepository,private val context: Context) : ViewModel() {
+
+    private val backupManager = BackupManager(context)
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
@@ -224,29 +231,7 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
     }
 
     // متدهای Schedule
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun createSchedule(
-        type: ScheduleType,
-        title: String,
-        description: String? = null,
-        scheduledDateTime: LocalDateTime? = null,
-        estimatedMinutes: Long? = null,
-        count: Int? = null,
-        eventDate: LocalDate? = null
-    ) {
-        viewModelScope.launch {
-            val schedule = Schedule(
-                type = type,
-                title = title,
-                description = description,
-                scheduledDateTime = scheduledDateTime,
-                estimatedMinutes = estimatedMinutes,
-                count = count,
-                eventDate = eventDate
-            )
-            repository.insertSchedule(schedule)
-        }
-    }
+
 
     fun updateSchedule(schedule: Schedule) {
         viewModelScope.launch {
@@ -319,23 +304,7 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun getScheduleDetails(schedule: Schedule): String {
-        return when (schedule.type) {
-            ScheduleType.SCHEDULED -> {
-                schedule.scheduledDateTime?.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")) ?: "تعیین نشده"
-            }
-            ScheduleType.ESTIMATED -> {
-                "${schedule.estimatedMinutes} دقیقه"
-            }
-            ScheduleType.COUNT -> {
-                "${schedule.currentCount}/${schedule.count ?: 0} بار"
-            }
-            ScheduleType.EVENT -> {
-                schedule.eventDate?.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) ?: "تعیین نشده"
-            }
-        }
-    }
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun formatDueDate(dueDate: LocalDateTime?): String {
@@ -379,16 +348,17 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
         }
     }
     // متدهای جدید برای ایجاد Schedule با categoryId
-    @RequiresApi(Build.VERSION_CODES.O)
+    // متد جدید برای ایجاد Schedule با ساختار جدید
     fun createSchedule(
         categoryId: Long?,
         type: ScheduleType,
         title: String,
         description: String? = null,
-        scheduledDateTime: LocalDateTime? = null,
+        scheduleDate: LocalDate? = null,
+        startTime: LocalTime? = null,
+        endTime: LocalTime? = null,
         estimatedMinutes: Long? = null,
-        count: Int? = null,
-        eventDate: LocalDate? = null
+        count: Int? = null
     ) {
         viewModelScope.launch {
             val schedule = Schedule(
@@ -396,14 +366,63 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
                 type = type,
                 title = title,
                 description = description,
-                scheduledDateTime = scheduledDateTime,
+                scheduleDate = scheduleDate,
+                startTime = startTime,
+                endTime = endTime,
                 estimatedMinutes = estimatedMinutes,
-                count = count,
-                eventDate = eventDate
+                count = count
             )
             repository.insertSchedule(schedule)
         }
     }
 
+    // به روزرسانی متد getScheduleDetails
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getScheduleDetails(schedule: Schedule): String {
+        return when (schedule.type) {
+            ScheduleType.SCHEDULED -> {
+                val dateStr = schedule.scheduleDate?.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) ?: "تعیین نشده"
+                val startStr = schedule.startTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "تعیین نشده"
+                val endStr = schedule.endTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "تعیین نشده"
+                "$dateStr - $startStr تا $endStr"
+            }
+            ScheduleType.ESTIMATED -> {
+                "${schedule.estimatedMinutes} دقیقه"
+            }
+            ScheduleType.COUNT -> {
+                "${schedule.currentCount}/${schedule.count ?: 0} بار"
+            }
+            ScheduleType.EVENT -> {
+                schedule.scheduleDate?.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) ?: "تعیین نشده"
+            }
+        }
+    }
 
+
+    // متدهای backup
+    fun createBackup(): Boolean {
+        return backupManager.createBackup()
+    }
+
+    fun getBackupFiles(): List<File> {
+        return backupManager.getBackupFiles()
+    }
+
+    fun restoreFromBackup(backupFile: File): Boolean {
+        // قبل از restore، باید دیتابیس فعلی را ببندیم
+        val result = backupManager.restoreFromBackup(backupFile)
+
+        // بعد از restore، دیتابیس جدید باید بارگیری شود
+        if (result) {
+            loadAllData() // بارگیری مجدد همه داده‌ها
+        }
+
+        return result
+    }
+
+    fun deleteBackupFile(file: File): Boolean {
+        return backupManager.deleteBackupFile(file)
+    }
 }
+
+

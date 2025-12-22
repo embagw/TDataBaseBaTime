@@ -51,6 +51,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +65,9 @@ import com.embag.tdatabasebatime.Model.Entity.Schedule
 import com.embag.tdatabasebatime.Model.Entity.ScheduleType
 import com.embag.tdatabasebatime.Model.Entity.TaskStatus
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,23 +84,36 @@ fun AddEditTaskScreen(
     val schedulesForCurrentTask by viewModel.schedulesForCurrentTask.collectAsState()
 
     // State variables
-    var selectedCategoryId by remember {
+    // استفاده از rememberSaveable برای حفظ stateها هنگام navigation
+    var selectedCategoryId by rememberSaveable {
         mutableStateOf(currentTask?.categoryId ?: categories.firstOrNull { it.name == "اصلی" }?.id)
     }
-    var title by remember { mutableStateOf(currentTask?.title ?: "") }
-    var description by remember { mutableStateOf(currentTask?.description ?: "") }
-    var priority by remember { mutableStateOf(currentTask?.priority?.toString() ?: "4") }
-    var status by remember { mutableStateOf(currentTask?.status ?: TaskStatus.NEEDS_DOING) }
+    var title by rememberSaveable { mutableStateOf(currentTask?.title ?: "") }
+    var description by rememberSaveable { mutableStateOf(currentTask?.description ?: "") }
+    var priority by rememberSaveable { mutableStateOf(currentTask?.priority?.toString() ?: "4") }
+    var status by rememberSaveable { mutableStateOf(currentTask?.status ?: TaskStatus.NEEDS_DOING) }
+    var hasDueDate by rememberSaveable { mutableStateOf(currentTask?.dueDate != null) }
+    var selectedDate by rememberSaveable {
+        mutableStateOf(
+            if (currentTask?.dueDate != null) currentTask!!.dueDate!!.toLocalDate()
+            else LocalDate.now().plusDays(7)
+        )
+    }
+    var selectedTime by rememberSaveable {
+        mutableStateOf(
+            if (currentTask?.dueDate != null) currentTask!!.dueDate?.toLocalTime()
+            else LocalTime.of(14, 0)
+        )
+    }
 
     // State برای مدیریت تاریخ و زمان (nullable)
-    var hasDueDate by remember { mutableStateOf(currentTask?.dueDate != null) }
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
     // State برای تاریخ و زمان
     val initialDueDate = currentTask?.dueDate ?: LocalDateTime.now().plusDays(7)
-    var selectedDate by remember { mutableStateOf(initialDueDate.toLocalDate()) }
-    var selectedTime by remember { mutableStateOf(initialDueDate.toLocalTime()) }
+
 
     // فرمت‌های نمایش
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
@@ -116,13 +132,15 @@ fun AddEditTaskScreen(
 
     // نمایش TimePicker Dialog
     if (showTimePicker) {
-        TimePickerDialog(
-            onTimeSelected = { time ->
-                selectedTime = time
-            },
-            onDismiss = { showTimePicker = false },
-            initialTime = selectedTime
-        )
+        selectedTime?.let {
+            TimePickerDialog(
+                onTimeSelected = { time ->
+                    selectedTime = time
+                },
+                onDismiss = { showTimePicker = false },
+                initialTime = it
+            )
+        }
     }
 
     Scaffold(
@@ -328,10 +346,12 @@ fun AddEditTaskScreen(
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = selectedTime.format(timeFormatter),
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
+                                            selectedTime?.let {
+                                                Text(
+                                                    text = it.format(timeFormatter),
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
                                         }
                                     }
 
