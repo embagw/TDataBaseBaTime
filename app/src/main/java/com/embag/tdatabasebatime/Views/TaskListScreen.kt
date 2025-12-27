@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
 import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.Model.Entity.TaskStatus
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
@@ -57,7 +58,7 @@ fun TaskListScreen(
         },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("مدیریت تسک‌ها") }
+                title = { Text("مدیریت وظیفه ها") }
             )
         }
     ) { paddingValues ->
@@ -68,7 +69,7 @@ fun TaskListScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Text("هیچ تسکی وجود ندارد")
+                Text("هیچ وظیفه ای وجود ندارد")
             }
         } else {
             LazyColumn(

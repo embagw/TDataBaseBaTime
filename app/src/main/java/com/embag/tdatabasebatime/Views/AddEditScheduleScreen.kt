@@ -457,6 +457,7 @@ fun AddEditScheduleScreen(
                                             type = scheduleType,
                                             title = title,
                                             description = description.ifBlank { null },
+                                            scheduleDate = scheduleDate, // 🆕 این خط مهم: اضافه کردن تاریخ
                                             estimatedMinutes = estimatedMinutes.toLong(),
                                             isActive = currentSchedule?.isActive ?: true
                                         )
@@ -467,6 +468,7 @@ fun AddEditScheduleScreen(
                                         type = scheduleType,
                                         title = title,
                                         description = description.ifBlank { null },
+                                        scheduleDate = scheduleDate, // 🆕 این خط مهم: اضافه کردن تاریخ
                                         estimatedMinutes = estimatedMinutes.toLong()
                                     )
                                 }

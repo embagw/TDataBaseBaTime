@@ -86,9 +86,14 @@ class TaskRepository(
             linkTaskToSchedule(taskId, scheduleId)
         }
     }
+    suspend fun getAllSchedulesD(): List<Schedule> {
+        return scheduleDao.getAllSchedulesForDebug()
+    }
 
     fun getAllSchedulesWithCalculatedPriority(): Flow<List<ScheduleWithCalculatedPriority>> =
         scheduleDao.getAllSchedulesWithCalculatedPriority()
+
+
 
 
 }

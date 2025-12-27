@@ -17,7 +17,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AssistChip
@@ -44,6 +46,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.embag.tdatabasebatime.Model.Entity.ScheduleWithTasks
 import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
@@ -53,6 +57,7 @@ import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
+    navController: NavController,
     viewModel: TaskViewModel,
     onTaskClick: (Task) -> Unit,
     onScheduleClick: (ScheduleWithTasks) -> Unit, // تغییر اینجا
@@ -62,13 +67,36 @@ fun MainScreen(
     onBackupRestore: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("تسک‌ها", "زمان‌بندی‌ها")
+    val tabs = listOf("وظیفه ها", "زمان‌بندی‌ها")
+
+
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("مدیریت تسک‌ها") },
+                title = { Text("مدیریت وظیفه ها") },
                 actions = {
+
+
+                    if (BuildConfig.DEBUG) {
+                        IconButton(
+                            onClick = { navController.navigate("scheduleDebug") }
+                        ) {
+                            Icon(Icons.Default.BugReport, contentDescription = "دیباگ")
+                        }
+                    }
+                        // دکمه الگوریتم
+                        IconButton(
+                            onClick = {
+                                navController.navigate("algorithmScreen")
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = "الگوریتم برنامه‌ریزی"
+                            )
+                        }
+
                     IconButton(onClick = onBackupRestore) {
                         Icon(Icons.Default.Backup, contentDescription = "Backup")
                     }

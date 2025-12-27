@@ -423,6 +423,41 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
     fun deleteBackupFile(file: File): Boolean {
         return backupManager.deleteBackupFile(file)
     }
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun createSampleEstimatedSchedule() {
+        viewModelScope.launch {
+            val schedule = Schedule(
+                categoryId = null,
+                type = ScheduleType.ESTIMATED,
+                title = "نمونه زمان‌بندی تخمینی",
+                description = "برای تست الگوریتم",
+                scheduleDate = LocalDate.now(),  // تاریخ امروز
+                estimatedMinutes = 60,  // 1 ساعت
+                isActive = true
+            )
+            repository.insertSchedule(schedule)
+        }
+    }
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun createTestEstimatedSchedule() {
+        viewModelScope.launch {
+            val schedule = Schedule(
+                categoryId = null,
+                type = ScheduleType.ESTIMATED,
+                title = "تست تخمینی - ${LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                description = "ایجاد شده برای تست",
+                scheduleDate = LocalDate.now(), // تاریخ امروز
+                estimatedMinutes = 45,
+                isActive = true
+            )
+            repository.insertSchedule(schedule)
+        }
+    }
+
+    // متد برای گرفتن همه زمان‌بندی‌ها (برای دیباگ)
+    suspend fun getAllSchedulesForDebug(): List<Schedule> {
+        return repository.getAllSchedulesD()
+    }
 }
 
 

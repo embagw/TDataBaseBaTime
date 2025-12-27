@@ -14,7 +14,9 @@ import com.embag.tdatabasebatime.Model.Entity.ScheduleWithCalculatedPriority
 import com.embag.tdatabasebatime.Model.Entity.ScheduleWithTasks
 import com.embag.tdatabasebatime.Model.Entity.Task
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Dao
 interface ScheduleDao {
@@ -73,4 +75,42 @@ interface ScheduleDao {
         ORDER BY calculated_priority ASC, s.createdAt ASC
     """)
     fun getAllSchedulesWithCalculatedPriority(): Flow<List<ScheduleWithCalculatedPriority>>
+
+
+    // دریافت زمان‌بندی‌های یک تاریخ خاص
+    /*@Query("SELECT * FROM schedules WHERE scheduleDate = :date AND isActive = 1")
+    suspend fun getSchedulesForDate(date: LocalDate): List<Schedule>*/
+
+    // دریافت زمان‌بندی‌های فعال بر اساس نوع و تاریخ
+    @Query("SELECT * FROM schedules WHERE type = :type AND isActive = 1 AND scheduleDate = :date")
+    suspend fun getSchedulesByTypeAndDate(type: ScheduleType, date: LocalDate): List<Schedule>
+
+    @Query("UPDATE schedules SET type = :newType, startTime = :startTime, endTime = :endTime, estimatedMinutes = :estimatedMinutes WHERE id = :scheduleId")
+    suspend fun updateScheduleType(
+        scheduleId: Long,
+        newType: ScheduleType,
+        startTime: LocalTime?,
+        endTime: LocalTime?,
+        estimatedMinutes: Long?
+    )
+    // 🆕 این متد جدید را اضافه کنید
+    @Query("SELECT * FROM schedules WHERE isActive = 1")
+    suspend fun getAllSchedulesForAlgorithm(): List<Schedule>
+
+    // 🆕 متد برای گرفتن schedules با تاریخ خاص
+    @Query("SELECT * FROM schedules WHERE scheduleDate = :date OR scheduleDate IS NULL")
+    suspend fun getSchedulesForDateOrNull(date: LocalDate): List<Schedule>
+
+    @Query("SELECT * FROM schedules WHERE scheduleDate = :date")
+    suspend fun getSchedulesForDate(date: LocalDate): List<Schedule>
+
+    // 🆕 متد جدید برای گرفتن زمان‌بندی‌های تخمینی با تاریخ خاص
+    @Query("SELECT * FROM schedules WHERE type = 'ESTIMATED' AND scheduleDate = :date AND isActive = 1")
+    suspend fun getEstimatedSchedulesByDate(date: LocalDate): List<Schedule>
+
+    @Query("SELECT * FROM schedules ORDER BY createdAt DESC")
+    suspend fun getAllSchedulesForDebug(): List<Schedule>
+
+
 }
+

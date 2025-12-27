@@ -1,5 +1,6 @@
 package com.embag.tdatabasebatime.Views
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,11 +17,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.embag.tdatabasebatime.Model.TaskDatabase
+import com.embag.tdatabasebatime.Repository.AlgorithmRepository
 import com.embag.tdatabasebatime.Repository.TaskRepository
+import com.embag.tdatabasebatime.Test.ScheduleDebugScreen
+import com.embag.tdatabasebatime.ViewModel.AlgorithmViewModel
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 import com.embag.tdatabasebatime.Views.ui.theme.TDataBaseBaTimeTheme
 
 class MainActivity : ComponentActivity() {
+    @SuppressLint("ViewModelConstructorInComposable")
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +65,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable("mainScreen") {
                             MainScreen(
+                                navController = navController,
                                 viewModel = viewModel,
                                 onTaskClick = { task ->
                                     viewModel.setCurrentTask(task)
@@ -171,6 +177,25 @@ class MainActivity : ComponentActivity() {
                                 onBack = {
                                     navController.popBackStack()
                                 }
+                            )
+                        }
+                        composable("algorithmScreen") {
+                            val algorithmRepository = AlgorithmRepository(
+                                database.scheduleDao(),
+                                database.taskDao(),
+                                database.taskScheduleDao()
+                            )
+                            val algorithmViewModel = AlgorithmViewModel(algorithmRepository)
+
+                            AlgorithmScreen(
+                                viewModel = algorithmViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("scheduleDebug") {
+                            ScheduleDebugScreen(
+                                viewModel = viewModel,
+                                onBack = { navController.popBackStack() }
                             )
                         }
                     }
