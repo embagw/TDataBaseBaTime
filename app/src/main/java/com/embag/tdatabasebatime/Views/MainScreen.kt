@@ -1,7 +1,11 @@
 package com.embag.tdatabasebatime.Views
 
 import android.os.Build
+
 import androidx.annotation.RequiresApi
+
+
+import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,10 +51,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+
 import com.embag.tdatabasebatime.Model.Entity.ScheduleWithTasks
 import com.embag.tdatabasebatime.Model.Entity.Task
-import com.embag.tdatabasebatime.ViewModel.TaskViewModel
+
+
+import androidx.compose.foundation.layout.*
+
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,7 +89,9 @@ fun MainScreen(
                 actions = {
 
 
-                    if (BuildConfig.DEBUG) {
+                    val isDebugMode = true // می‌توانید این را از BuildConfig بگیرید یا ثابت بگذارید
+
+                    if (isDebugMode) {
                         IconButton(
                             onClick = { navController.navigate("scheduleDebug") }
                         ) {

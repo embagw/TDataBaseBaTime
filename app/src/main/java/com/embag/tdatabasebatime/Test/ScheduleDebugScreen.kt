@@ -1,5 +1,6 @@
 package com.embag.tdatabasebatime.Test
 
+
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -32,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,8 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.embag.tdatabasebatime.Model.Entity.ScheduleType
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -51,14 +56,10 @@ fun ScheduleDebugScreen(
     viewModel: TaskViewModel,
     onBack: () -> Unit
 ) {
-    var debugText by remember  { mutableStateOf("") }
+    var debugText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-
-    LaunchedEffect (Unit) {
-        loadDebugInfo(viewModel) { info ->
-            debugText = info
-        }
-    }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -78,7 +79,7 @@ fun ScheduleDebugScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // دکمه‌های عملیاتی
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -86,17 +87,59 @@ fun ScheduleDebugScreen(
                 Button(
                     onClick = {
                         isLoading = true
-                        viewModel.createTestEstimatedSchedule()
-                        Toast.makeText(
-                            LocalContext.current,
-                            "یک زمان‌بندی تخمینی نمونه ایجاد شد",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        scope.launch {
+                            viewModel.createTestEstimatedSchedule()
 
-                        // بارگیری مجدد اطلاعات
-                        loadDebugInfo(viewModel) { info ->
-                            debugText = info
-                            isLoading = false
+                            // نمایش Toast در ترد اصلی
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "یک زمان‌بندی تخمینی نمونه ایجاد شد",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                // بارگیری اطلاعات دیباگ
+                                try {
+                                    val allSchedules = viewModel.getAllSchedulesForDebug()
+                                    val info = buildString {
+                                        appendLine("📊 دیباگ زمان‌بندی‌ها - ${LocalDateTime.now()}")
+                                        appendLine("=".repeat(60))
+                                        appendLine()
+
+                                        val estimatedSchedules = allSchedules.filter { it.type == ScheduleType.ESTIMATED }
+                                        appendLine("🎯 زمان‌بندی‌های تخمینی (${estimatedSchedules.size}):")
+                                        appendLine("-".repeat(40))
+
+                                        if (estimatedSchedules.isEmpty()) {
+                                            appendLine("❌ هیچ زمان‌بندی تخمینی وجود ندارد")
+                                        } else {
+                                            estimatedSchedules.forEachIndexed { index, schedule ->
+                                                appendLine("${index + 1}. ${schedule.title}")
+                                                appendLine("   ID: ${schedule.id}")
+                                                appendLine("   تاریخ: ${schedule.scheduleDate ?: "NULL ⚠️"}")
+                                                appendLine("   تخمین: ${schedule.estimatedMinutes} دقیقه")
+                                                appendLine("   فعال: ${schedule.isActive}")
+                                                appendLine("   ایجاد: ${schedule.createdAt}")
+                                                appendLine()
+                                            }
+                                        }
+
+                                        appendLine()
+
+                                        appendLine("📋 همه زمان‌بندی‌ها (${allSchedules.size}):")
+                                        appendLine("-".repeat(40))
+
+                                        allSchedules.forEachIndexed { index, schedule ->
+                                            val dateInfo = if (schedule.scheduleDate == null) "NULL" else schedule.scheduleDate.toString()
+                                            appendLine("${index + 1}. ${schedule.title} (${schedule.type}) - تاریخ: $dateInfo")
+                                        }
+                                    }
+                                    debugText = info
+                                } catch (e: Exception) {
+                                    debugText = "❌ خطا: ${e.message}"
+                                }
+                                isLoading = false
+                            }
                         }
                     }
                 ) {
@@ -106,9 +149,48 @@ fun ScheduleDebugScreen(
                 Button(
                     onClick = {
                         isLoading = true
-                        loadDebugInfo(viewModel) { info ->
-                            debugText = info
-                            isLoading = false
+                        scope.launch {
+                            try {
+                                val allSchedules = viewModel.getAllSchedulesForDebug()
+                                val info = buildString {
+                                    appendLine("📊 دیباگ زمان‌بندی‌ها - ${LocalDateTime.now()}")
+                                    appendLine("=".repeat(60))
+                                    appendLine()
+
+                                    val estimatedSchedules = allSchedules.filter { it.type == ScheduleType.ESTIMATED }
+                                    appendLine("🎯 زمان‌بندی‌های تخمینی (${estimatedSchedules.size}):")
+                                    appendLine("-".repeat(40))
+
+                                    if (estimatedSchedules.isEmpty()) {
+                                        appendLine("❌ هیچ زمان‌بندی تخمینی وجود ندارد")
+                                    } else {
+                                        estimatedSchedules.forEachIndexed { index, schedule ->
+                                            appendLine("${index + 1}. ${schedule.title}")
+                                            appendLine("   ID: ${schedule.id}")
+                                            appendLine("   تاریخ: ${schedule.scheduleDate ?: "NULL ⚠️"}")
+                                            appendLine("   تخمین: ${schedule.estimatedMinutes} دقیقه")
+                                            appendLine("   فعال: ${schedule.isActive}")
+                                            appendLine("   ایجاد: ${schedule.createdAt}")
+                                            appendLine()
+                                        }
+                                    }
+
+                                    appendLine()
+
+                                    appendLine("📋 همه زمان‌بندی‌ها (${allSchedules.size}):")
+                                    appendLine("-".repeat(40))
+
+                                    allSchedules.forEachIndexed { index, schedule ->
+                                        val dateInfo = if (schedule.scheduleDate == null) "NULL" else schedule.scheduleDate.toString()
+                                        appendLine("${index + 1}. ${schedule.title} (${schedule.type}) - تاریخ: $dateInfo")
+                                    }
+                                }
+                                debugText = info
+                            } catch (e: Exception) {
+                                debugText = "❌ خطا: ${e.message}"
+                            } finally {
+                                isLoading = false
+                            }
                         }
                     }
                 ) {
@@ -126,7 +208,7 @@ fun ScheduleDebugScreen(
                     CircularProgressIndicator()
                 }
             } else {
-                Card (
+                Card(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(4.dp)
                 ) {
@@ -145,8 +227,8 @@ fun ScheduleDebugScreen(
 }
 
 // تابع کمکی برای بارگیری اطلاعات دیباگ
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
+@RequiresApi(Build.VERSION_CODES.O)
 private fun loadDebugInfo(
     viewModel: TaskViewModel,
     onResult: (String) -> Unit
