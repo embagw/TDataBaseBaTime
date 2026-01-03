@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
                             klass = TaskDatabase::class.java,
                             name = TaskDatabase.DATABASE_NAME
                         )
-                            .addMigrations(TaskDatabase.MIGRATION_2_3) // تغییر به MIGRATION_2_3
+                            .addMigrations(TaskDatabase.MIGRATION_3_4) // تغییر به MIGRATION_2_3
                             .fallbackToDestructiveMigration()
                             .build()
                     }
@@ -194,6 +194,12 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("scheduleDebug") {
                             ScheduleDebugScreen(
+                                viewModel = viewModel,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("calendarView") {
+                            CalendarViewScreen(
                                 viewModel = viewModel,
                                 onBack = { navController.popBackStack() }
                             )

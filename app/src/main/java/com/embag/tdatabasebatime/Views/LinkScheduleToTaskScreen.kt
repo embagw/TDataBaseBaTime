@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.Card
@@ -46,9 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
-
-
-
 
 
 @SuppressLint("RememberReturnType")

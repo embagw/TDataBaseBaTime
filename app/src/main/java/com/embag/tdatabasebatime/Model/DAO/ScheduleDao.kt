@@ -111,6 +111,9 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedules ORDER BY createdAt DESC")
     suspend fun getAllSchedulesForDebug(): List<Schedule>
 
+    @Query("SELECT * FROM schedules WHERE isActive = 1")
+    suspend fun getAllActiveSchedules(): List<Schedule>
+
 
 }
 

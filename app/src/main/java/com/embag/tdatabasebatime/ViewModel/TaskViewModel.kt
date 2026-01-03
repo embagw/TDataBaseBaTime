@@ -8,9 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.embag.tdatabasebatime.Model.BackUP.BackupManager
 import com.embag.tdatabasebatime.Model.Entity.Category
 import com.embag.tdatabasebatime.Model.Entity.CategoryWithTaskCount
+import com.embag.tdatabasebatime.Model.Entity.RepeatType
 import com.embag.tdatabasebatime.Model.Entity.Schedule
 import com.embag.tdatabasebatime.Model.Entity.ScheduleType
-import com.embag.tdatabasebatime.Model.Entity.ScheduleWithCalculatedPriority
 import com.embag.tdatabasebatime.Model.Entity.ScheduleWithTasks
 import com.embag.tdatabasebatime.Model.Entity.Task
 import com.embag.tdatabasebatime.Model.Entity.TaskStatus
@@ -21,11 +21,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 class TaskViewModel(private val repository: TaskRepository,private val context: Context) : ViewModel() {
 
@@ -347,8 +347,9 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
             else -> "عادی" // پیش‌فرض برای 4 و بالاتر
         }
     }
-    // متدهای جدید برای ایجاد Schedule با categoryId
-    // متد جدید برای ایجاد Schedule با ساختار جدید
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
     fun createSchedule(
         categoryId: Long?,
         type: ScheduleType,
@@ -358,8 +359,16 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
         startTime: LocalTime? = null,
         endTime: LocalTime? = null,
         estimatedMinutes: Long? = null,
-        count: Int? = null
-    ) {
+        count: Int? = null,
+        // پارامترهای جدید تکرار
+        repeatType: RepeatType = RepeatType.NONE,
+        repeatInterval: Int = 1,
+        repeatDaysOfWeek: Set<DayOfWeek>? = null, // تغییر به Set
+        repeatDayOfMonth: Int? = null,
+        repeatMonthOfYear: Int? = null,
+        repeatEndDate: LocalDate? = null,
+        repeatCount: Int? = null
+    ){
         viewModelScope.launch {
             val schedule = Schedule(
                 categoryId = categoryId,
@@ -370,7 +379,14 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
                 startTime = startTime,
                 endTime = endTime,
                 estimatedMinutes = estimatedMinutes,
-                count = count
+                count = count,
+                repeatType = repeatType,
+                repeatInterval = repeatInterval,
+                repeatDaysOfWeek = repeatDaysOfWeek?.joinToString(",") { it.value.toString() },
+                repeatDayOfMonth = repeatDayOfMonth,
+                repeatMonthOfYear = repeatMonthOfYear,
+                repeatEndDate = repeatEndDate,
+                repeatCount = repeatCount
             )
             repository.insertSchedule(schedule)
         }
@@ -379,7 +395,7 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
     // به روزرسانی متد getScheduleDetails
     @RequiresApi(Build.VERSION_CODES.O)
     fun getScheduleDetails(schedule: Schedule): String {
-        return when (schedule.type) {
+        val baseDetails = when (schedule.type) {
             ScheduleType.SCHEDULED -> {
                 val dateStr = schedule.scheduleDate?.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) ?: "تعیین نشده"
                 val startStr = schedule.startTime?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "تعیین نشده"
@@ -396,6 +412,21 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
                 schedule.scheduleDate?.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")) ?: "تعیین نشده"
             }
         }
+
+        // اضافه کردن اطلاعات تکرار
+        val repeatInfo = if (schedule.repeatType != RepeatType.NONE) {
+            val repeatText = when (schedule.repeatType) {
+                RepeatType.DAILY -> "هر ${schedule.repeatInterval} روز"
+                RepeatType.WEEKLY -> "هر ${schedule.repeatInterval} هفته"
+                RepeatType.MONTHLY -> "هر ${schedule.repeatInterval} ماه"
+                RepeatType.YEARLY -> "هر ${schedule.repeatInterval} سال"
+                RepeatType.CUSTOM_DAYS -> "روزهای خاص هفته"
+                else -> ""
+            }
+            " (تکرار: $repeatText)"
+        } else ""
+
+        return baseDetails + repeatInfo
     }
 
 

@@ -10,47 +10,57 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 @Entity(tableName = "schedules")
-data class Schedule(
+data class Schedule @RequiresApi(Build.VERSION_CODES.O) constructor(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
 
-    @ColumnInfo(name = "categoryId", index = true)
     val categoryId: Long? = null,
+    val type: ScheduleType = ScheduleType.SCHEDULED,
 
-    @ColumnInfo(name = "type", typeAffinity = ColumnInfo.TEXT)
-    val type: ScheduleType,
-
-    // تاریخ زمان‌بندی (برای همه انواع)
-    @ColumnInfo(name = "scheduleDate")
-    val scheduleDate: LocalDate? = null,
-
-    // ساعت شروع و پایان (فقط برای SCHEDULED)
-    @ColumnInfo(name = "startTime")
-    val startTime: LocalTime? = null,
-
-    @ColumnInfo(name = "endTime")
-    val endTime: LocalTime? = null,
-
-    // برای نوع ESTIMATED
-    @ColumnInfo(name = "estimatedMinutes")
-    val estimatedMinutes: Long? = null,
-
-    // برای نوع COUNT
-    @ColumnInfo(name = "count")
-    val count: Int? = null,
-
-    @ColumnInfo(name = "currentCount", defaultValue = "0")
-    val currentCount: Int = 0,
-
-    @ColumnInfo(name = "title")
-    val title: String,
-
-    @ColumnInfo(name = "description")
+    val title: String = "",
     val description: String? = null,
 
-    @ColumnInfo(name = "isActive", defaultValue = "1")
-    val isActive: Boolean = true,
+    val scheduleDate: LocalDate? = null,
+    val startTime: LocalTime? = null,
+    val endTime: LocalTime? = null,
 
-    @ColumnInfo(name = "createdAt")
-    val createdAt: LocalDateTime = LocalDateTime.now()
+    val estimatedMinutes: Long? = null,
+    val count: Int? = null,
+    val currentCount: Int = 0,
+
+    // فیلدهای جدید برای تکرار
+    val repeatType: RepeatType = RepeatType.NONE,
+    val repeatInterval: Int = 1, // هر چند روز/هفته/ماه
+
+    // برای تکرار هفتگی - روزهای هفته
+    val repeatDaysOfWeek: String? = null, // "1,2,5" برای شنبه، یکشنبه، چهارشنبه
+
+    // برای تکرار ماهیانه - روز ماه
+    val repeatDayOfMonth: Int? = null,
+
+    // برای تکرار سالانه - روز و ماه
+    val repeatMonthOfYear: Int? = null, // 1-12
+
+    val repeatEndDate: LocalDate? = null,
+    val repeatCount: Int? = null, // تعداد دفعات تکرار
+
+    val isActive: Boolean = true,
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    val updatedAt: LocalDateTime = LocalDateTime.now()
 )
+
+enum class RepeatType {
+    NONE,
+    DAILY,
+    WEEKLY,
+    MONTHLY,
+    YEARLY,
+    CUSTOM_DAYS  // برای روزهای خاص هفته
+}
+
+enum class ScheduleType {
+    SCHEDULED,
+    ESTIMATED,
+    COUNT,
+    EVENT
+}

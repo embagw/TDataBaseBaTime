@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
@@ -36,6 +34,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +44,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -60,7 +59,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.test.services.storage.file.PropertyFile.Column
 import com.embag.tdatabasebatime.Model.Entity.Schedule
 import com.embag.tdatabasebatime.Model.Entity.ScheduleType
 import com.embag.tdatabasebatime.Model.Entity.TaskStatus
@@ -69,6 +67,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,7 +90,8 @@ fun AddEditTaskScreen(
     }
     var title by rememberSaveable { mutableStateOf(currentTask?.title ?: "") }
     var description by rememberSaveable { mutableStateOf(currentTask?.description ?: "") }
-    var priority by rememberSaveable { mutableStateOf(currentTask?.priority?.toString() ?: "4") }
+//    var priority by rememberSaveable { mutableStateOf(currentTask?.priority?.toString() ?: "4") }
+    var priority by rememberSaveable { mutableStateOf(currentTask?.priority ?: 4) }
     var status by rememberSaveable { mutableStateOf(currentTask?.status ?: TaskStatus.NEEDS_DOING) }
     var hasDueDate by rememberSaveable { mutableStateOf(currentTask?.dueDate != null) }
     var selectedDate by rememberSaveable {
@@ -270,22 +271,60 @@ fun AddEditTaskScreen(
                     )
 
                     // اولویت
-                    OutlinedTextField(
-                        value = priority,
-                        onValueChange = {
-                            if (it.all { char -> char.isDigit() } && it.isNotEmpty()) {
-                                val value = it.toInt()
-                                if (value in 1..4) {
-                                    priority = it
+                    Card(
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "اولویت *",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            val priorityOptions = listOf(
+                                "ضروری" to 1,
+                                "مهم" to 2,
+                                "فوری" to 3,
+                                "عادی" to 4
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                priorityOptions.forEach { (text, value) ->
+                                    FilterChip(
+                                        selected = priority == value,
+                                        onClick = { priority = value },
+                                        label = { Text(text) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            containerColor = if (priority == value) {
+                                                when (value) {
+                                                    1 -> MaterialTheme.colorScheme.errorContainer
+                                                    2 -> MaterialTheme.colorScheme.primaryContainer
+                                                    3 -> MaterialTheme.colorScheme.secondaryContainer
+                                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                                }
+                                            } else MaterialTheme.colorScheme.surface,
+                                            labelColor = if (priority == value) {
+                                                when (value) {
+                                                    1 -> MaterialTheme.colorScheme.onErrorContainer
+                                                    2 -> MaterialTheme.colorScheme.onPrimaryContainer
+                                                    3 -> MaterialTheme.colorScheme.onSecondaryContainer
+                                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                }
+                                            } else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
                                 }
-                            } else if (it.isEmpty()) {
-                                priority = ""
                             }
-                        },
-                        label = { Text("اولویت (1-4) *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        isError = priority.isEmpty() || priority.toIntOrNull() !in 1..4
-                    )
+                        }
+                    }
 
                     // بخش انتخاب تاریخ و زمان
                     Card(
@@ -493,7 +532,8 @@ fun AddEditTaskScreen(
             // دکمه ذخیره
             Button(
                 onClick = {
-                    if (title.isNotEmpty() && priority.toIntOrNull() in 1..4) {
+                    if (title.isNotEmpty() && priority in 1..4) {
+
                         // تاریخ مهلت فقط اگر کاربر انتخاب کرده باشد
                         val finalDueDate = if (hasDueDate) {
                             LocalDateTime.of(selectedDate, selectedTime)
@@ -525,7 +565,7 @@ fun AddEditTaskScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = title.isNotEmpty() && priority.toIntOrNull() in 1..4
+                enabled = title.isNotEmpty() && priority in 1..4
             ) {
                 Text(if (isEditMode) "ذخیره تغییرات" else "ایجاد تسک")
             }

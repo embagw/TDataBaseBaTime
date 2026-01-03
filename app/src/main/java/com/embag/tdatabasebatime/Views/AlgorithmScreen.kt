@@ -18,6 +18,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Warning
@@ -45,7 +49,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.embag.tdatabasebatime.Model.Entity.RepeatType
 import com.embag.tdatabasebatime.Model.Entity.Schedule
+import com.embag.tdatabasebatime.Model.Entity.ScheduleType
+import com.embag.tdatabasebatime.Repository.AlgorithmRepository
 import com.embag.tdatabasebatime.Repository.AlgorithmResult
 import com.embag.tdatabasebatime.Repository.ScheduleWithPriority
 import com.embag.tdatabasebatime.ViewModel.AlgorithmViewModel
@@ -53,6 +60,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+
+import com.embag.tdatabasebatime.Repository.ScheduleRecurrenceCalculator
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,12 +76,11 @@ fun AlgorithmScreen(
     val algorithmResult by viewModel.algorithmResult.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // استفاده از viewModel به جای algorithmRepository
+    val allSchedulesForDate by viewModel.allSchedulesForDate.collectAsState()
+
     var showDatePicker by remember { mutableStateOf(false) }
-
-
-    // 🆕 دیباگ دکمه برای بررسی داده‌ها
     var showDebugInfo by remember { mutableStateOf(false) }
-
 
     LaunchedEffect (Unit) {
         viewModel.setSelectedDate(LocalDate.now())
@@ -216,7 +224,55 @@ fun AlgorithmScreen(
                     }
                 }
             }
+            Card(elevation = CardDefaults.cardElevation(4.dp)) {
+                var showAllSchedules by remember { mutableStateOf(false) }
 
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "همه زمان‌بندی‌های روز",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        IconButton(
+                            onClick = { showAllSchedules = !showAllSchedules }
+                        ) {
+                            Icon(
+                                if (showAllSchedules) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (showAllSchedules) "بستن" else "باز کردن"
+                            )
+                        }
+                    }
+
+                    if (showAllSchedules) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        if (allSchedulesForDate.isEmpty()) {
+                            Text(
+                                text = "هیچ زمان‌بندی‌ای برای این روز وجود ندارد",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                allSchedulesForDate.forEach { schedule ->
+                                    AllScheduleItem(schedule = schedule, viewModel = viewModel)
+                                }
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = "تعداد: ${allSchedulesForDate.size} زمان‌بندی",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             // دکمه اجرای الگوریتم
             Button(
                 onClick = { viewModel.runAlgorithm() },
@@ -448,6 +504,74 @@ fun ResultCard(result: AlgorithmResult) {
                 }
             }
         }
+    }
+}
+@Composable
+fun AllScheduleItem(
+    schedule: Schedule,
+    viewModel: AlgorithmViewModel
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when (schedule.type) {
+                ScheduleType.SCHEDULED -> MaterialTheme.colorScheme.primaryContainer
+                ScheduleType.ESTIMATED -> MaterialTheme.colorScheme.secondaryContainer
+                ScheduleType.COUNT -> MaterialTheme.colorScheme.tertiaryContainer
+                ScheduleType.EVENT -> MaterialTheme.colorScheme.surfaceVariant
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = when (schedule.type) {
+                    ScheduleType.SCHEDULED -> Icons.Default.Schedule
+                    ScheduleType.ESTIMATED -> Icons.Default.Timer
+                    ScheduleType.COUNT -> Icons.Default.Repeat
+                    ScheduleType.EVENT -> Icons.Default.Event
+                },
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = schedule.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "${schedule.type} - ${schedule.scheduleDate}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                if (schedule.repeatType != RepeatType.NONE) {
+                    Text(
+                        text = "تکرار: ${viewModel.getRepeatTypeText(schedule.repeatType)} هر ${schedule.repeatInterval}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun getRepeatTypeText(repeatType: RepeatType): String {
+    return when (repeatType) {
+        RepeatType.DAILY -> "روز"
+        RepeatType.WEEKLY -> "هفته"
+        RepeatType.MONTHLY -> "ماه"
+        RepeatType.YEARLY -> "سال"
+        RepeatType.CUSTOM_DAYS -> "روزهای مشخص"
+        else -> "بدون تکرار"
     }
 }
 

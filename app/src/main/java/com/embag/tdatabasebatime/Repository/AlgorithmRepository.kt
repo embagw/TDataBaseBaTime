@@ -18,27 +18,28 @@ class AlgorithmRepository(
     private val taskScheduleDao: TaskScheduleDao
 ) {
 
-    // دریافت زمان‌های خالی روز
     suspend fun calculateFreeSlots(
         targetDate: LocalDate,
-        dayStart: LocalTime = LocalTime.of(0, 0),  // 00:00
-        dayEnd: LocalTime = LocalTime.of(23, 59)   // 23:59
+        dayStart: LocalTime = LocalTime.of(0, 0),
+        dayEnd: LocalTime = LocalTime.of(23, 59)
     ): List<Pair<LocalTime, LocalTime>> {
+        // حذف try-catch از اینجا و به سادگی return کنیم
+        // Get all schedules that occur on targetDate (including repeats)
+        val allSchedules = scheduleDao.getAllSchedulesForAlgorithm()
 
-        // 1. دریافت زمان‌بندی‌های SCHEDULED برای این تاریخ
-        val scheduledTasks = scheduleDao.getSchedulesForDate(targetDate)
-            .filter {
-                it.type == ScheduleType.SCHEDULED &&
-                        it.isActive &&
-                        it.startTime != null &&
-                        it.endTime != null
+        val scheduledTasks = allSchedules
+            .filter { schedule ->
+                ScheduleRecurrenceCalculator.isScheduleOccurringOnDate(schedule, targetDate) &&
+                        schedule.type == ScheduleType.SCHEDULED &&
+                        schedule.isActive &&
+                        schedule.startTime != null &&
+                        schedule.endTime != null
             }
             .sortedBy { it.startTime }
 
         val freeSlots = mutableListOf<Pair<LocalTime, LocalTime>>()
         var currentTime = dayStart
 
-        // 2. محاسبه زمان‌های خالی
         for (task in scheduledTasks) {
             task.startTime?.let { startTime ->
                 if (currentTime.isBefore(startTime)) {
@@ -48,7 +49,6 @@ class AlgorithmRepository(
             }
         }
 
-        // زمان خالی انتهای روز
         if (currentTime.isBefore(dayEnd)) {
             freeSlots.add(Pair(currentTime, dayEnd))
         }
@@ -56,20 +56,19 @@ class AlgorithmRepository(
         return freeSlots
     }
 
-    // دریافت زمان‌بندی‌های ESTIMATED برای یک تاریخ خاص
     suspend fun getEstimatedSchedulesForDate(date: LocalDate): List<ScheduleWithPriority> {
-        // 🆕 دریافت زمان‌بندی‌های تخمینی که تاریخشان با تاریخ انتخاب شده مطابقت دارد
-        val allSchedules = scheduleDao.getSchedulesForDate(date)
+        // Get all estimated schedules
+        val allSchedules = scheduleDao.getAllSchedulesForAlgorithm()
 
+        // Filter for estimated schedules occurring on this date
         val estimatedSchedules = allSchedules
-            .filter {
-                it.type == ScheduleType.ESTIMATED &&
-                        it.isActive &&
-                        it.estimatedMinutes != null &&
-                        it.scheduleDate == date  // 🆕 مهم: فقط تاریخ‌های مطابقت‌دار
+            .filter { schedule ->
+                ScheduleRecurrenceCalculator.isScheduleOccurringOnDate(schedule, date) &&
+                        schedule.type == ScheduleType.ESTIMATED &&
+                        schedule.isActive &&
+                        schedule.estimatedMinutes != null
             }
 
-        // دیباگ: نمایش زمان‌بندی‌های یافت شده
         if (estimatedSchedules.isNotEmpty()) {
             println("📊 پیدا شد ${estimatedSchedules.size} زمان‌بندی تخمینی برای تاریخ $date")
             estimatedSchedules.forEach {
@@ -79,12 +78,11 @@ class AlgorithmRepository(
             println("⚠️ هیچ زمان‌بندی تخمینی برای تاریخ $date پیدا نشد")
         }
 
-        // محاسبه اولویت برای هر زمان‌بندی
         val schedulesWithPriority = mutableListOf<ScheduleWithPriority>()
 
         for (schedule in estimatedSchedules) {
             val relatedTasks = taskScheduleDao.getTasksForSchedule(schedule.id)
-            var minPriority = 4 // پیش‌فرض
+            var minPriority = 4
 
             for (taskCrossRef in relatedTasks) {
                 val task = taskDao.getTaskById(taskCrossRef.taskId)
@@ -103,24 +101,19 @@ class AlgorithmRepository(
             )
         }
 
-        // مرتب‌سازی بر اساس اولویت (اولویت کمتر = مهم‌تر)
         return schedulesWithPriority.sortedBy { it.priority }
     }
 
-    // اجرای الگوریتم اصلی
     suspend fun runSchedulingAlgorithm(
         targetDate: LocalDate,
-        dayStart: LocalTime = LocalTime.of(8, 0),
-        dayEnd: LocalTime = LocalTime.of(22, 0)
+        dayStart: LocalTime = LocalTime.of(0, 0),
+        dayEnd: LocalTime = LocalTime.of(23, 59)
     ): AlgorithmResult {
 
-        // 1. دریافت زمان‌های خالی
         val freeSlots = calculateFreeSlots(targetDate, dayStart, dayEnd)
 
-        // 2. دریافت زمان‌بندی‌های ESTIMATED با اولویت
         val estimatedSchedulesWithPriority = getEstimatedSchedulesForDate(targetDate)
 
-        // 3. اجرای الگوریتم
         val convertedSchedules = mutableListOf<Schedule>()
         val failedSchedules = mutableListOf<Schedule>()
         val remainingFreeSlots = freeSlots.toMutableList()
@@ -135,7 +128,7 @@ class AlgorithmRepository(
                 val slotDuration = ChronoUnit.MINUTES.between(slotStart, slotEnd)
 
                 if (slotDuration >= requiredMinutes) {
-                    // زمان کافی موجود است - تبدیل به SCHEDULED
+
                     val scheduledEndTime = slotStart.plusMinutes(requiredMinutes)
 
                     val convertedSchedule = estimatedSchedule.copy(
@@ -143,14 +136,12 @@ class AlgorithmRepository(
                         scheduleDate = targetDate,
                         startTime = slotStart,
                         endTime = scheduledEndTime,
-                        estimatedMinutes = null // پاک کردن فیلد تخمینی
+                        estimatedMinutes = null
                     )
 
-                    // ذخیره در دیتابیس
                     scheduleDao.updateSchedule(convertedSchedule)
                     convertedSchedules.add(convertedSchedule)
 
-                    // به‌روزرسانی زمان خالی
                     remainingFreeSlots[i] = Pair(scheduledEndTime, slotEnd)
                     scheduled = true
                     break
@@ -162,7 +153,6 @@ class AlgorithmRepository(
             }
         }
 
-        // محاسبه کل زمان خالی باقی‌مانده
         val totalFreeMinutes = remainingFreeSlots.sumOf { slot ->
             ChronoUnit.MINUTES.between(slot.first, slot.second).toLong()
         }
@@ -179,9 +169,15 @@ class AlgorithmRepository(
             dayEnd = dayEnd
         )
     }
+
+    suspend fun getAllSchedulesForDate(date: LocalDate): List<Schedule> {
+        val allSchedules = scheduleDao.getAllSchedulesForAlgorithm()
+        return allSchedules.filter { schedule ->
+            ScheduleRecurrenceCalculator.isScheduleOccurringOnDate(schedule, date)
+        }
+    }
 }
 
-// مدل‌های کمکی
 data class ScheduleWithPriority(
     val schedule: Schedule,
     val priority: Int
@@ -194,7 +190,7 @@ data class AlgorithmResult(
     val remainingFreeSlots: List<Pair<LocalTime, LocalTime>>,
     val totalConverted: Int,
     val totalFailed: Int,
-    val totalFreeMinutes: Long, // تغییر به Long
+    val totalFreeMinutes: Long,
     val dayStart: LocalTime,
     val dayEnd: LocalTime
 )

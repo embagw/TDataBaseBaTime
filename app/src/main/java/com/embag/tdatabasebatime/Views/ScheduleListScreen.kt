@@ -12,15 +12,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,43 +35,42 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.embag.tdatabasebatime.Model.Entity.Task
-import com.embag.tdatabasebatime.Model.Entity.TaskStatus
+import com.embag.tdatabasebatime.Model.Entity.ScheduleWithTasks
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskListScreen(
+fun ScheduleListScreen(
     viewModel: TaskViewModel,
-    onTaskClick: (Task) -> Unit,
-//    onAddTask: () -> Unit
+    onScheduleClick: (ScheduleWithTasks) -> Unit,
+//    onAddSchedule: () -> Unit
 ) {
-    val tasks by viewModel.tasks.collectAsState()
+    val schedules by viewModel.schedulesWithTasks.collectAsState() // تغییر اینجا
 
     Scaffold(
         /*floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddTask,
-                containerColor = MaterialTheme.colorScheme.primary
+                onClick = onAddSchedule,
+                modifier = Modifier.padding(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Task")
+                Icon(Icons.Default.Add, contentDescription = "Add Schedule")
             }
         },*/
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("مدیریت وظیفه ها") }
+                title = { Text("مدیریت زمان‌بندی‌ها") }
             )
         }
     ) { paddingValues ->
-        if (tasks.isEmpty()) {
+        if (schedules.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Text("هیچ وظیفه ای وجود ندارد")
+                Text("هیچ زمان‌بندی وجود ندارد")
             }
         } else {
             LazyColumn(
@@ -77,11 +80,11 @@ fun TaskListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(tasks) { task ->
-                    TaskItem(
-                        task = task,
+                items(schedules) { schedule ->
+                    ScheduleCard(
+                        scheduleWithTasks = schedule,
                         viewModel = viewModel,
-                        onClick = { onTaskClick(task) }
+                        onClick = { onScheduleClick(schedule) }
                     )
                 }
             }
@@ -89,13 +92,14 @@ fun TaskListScreen(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TaskItem(
-    task: Task,
+@RequiresApi(Build.VERSION_CODES.O)
+fun ScheduleCard(
+    scheduleWithTasks: ScheduleWithTasks,
     viewModel: TaskViewModel,
     onClick: () -> Unit
 ) {
+    val schedule = scheduleWithTasks.schedule
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
@@ -108,19 +112,33 @@ fun TaskItem(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
+                // اطلاعات زمان‌بندی
+                Column {
+                    Text(
+                        text = schedule.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = viewModel.getScheduleTypeText(schedule.type),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = viewModel.getScheduleDetails(schedule),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
-                // نمایش اولویت
+                // اولویت
                 AssistChip(
                     onClick = {},
-                    label = { Text(viewModel.getPriorityText(task.priority)) },
+                    label = {
+                        Text(
+                            viewModel.getSchedulePriorityTextWithDefault(scheduleWithTasks)
+                        )
+                    },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = when (task.priority) {
+                        containerColor = when (scheduleWithTasks.calculatedPriority) {
                             1 -> MaterialTheme.colorScheme.errorContainer
                             2 -> MaterialTheme.colorScheme.primaryContainer
                             3 -> MaterialTheme.colorScheme.secondaryContainer
@@ -130,46 +148,28 @@ fun TaskItem(
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // دسته‌بندی (استفاده از getCategoryName)
-            Text(
-                text = "دسته‌بندی: ${viewModel.getCategoryName(task.categoryId)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            // توضیحات
-            task.description?.let {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2
-                )
-            }
-
             Spacer(modifier = Modifier.height(8.dp))
 
+            // تعداد تسک‌های متصل
+            Text(
+                text = "تعداد تسک‌های متصل: ${scheduleWithTasks.tasks.size}",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            // وضعیت فعال
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // تاریخ مهلت
+                Icon(
+                    imageVector = if (schedule.isActive) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                    contentDescription = null,
+                    tint = if (schedule.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "مهلت: ${viewModel.formatDueDate(task.dueDate)}",
+                    text = if (schedule.isActive) "فعال" else "غیرفعال",
                     style = MaterialTheme.typography.labelSmall
                 )
-
-                // وضعیت
-                Badge(
-                    containerColor = when (task.status) {
-                        TaskStatus.DONE -> MaterialTheme.colorScheme.primaryContainer
-                        TaskStatus.CANCELLED -> MaterialTheme.colorScheme.errorContainer
-                        else -> MaterialTheme.colorScheme.secondaryContainer
-                    }
-                ) {
-                    Text(viewModel.getStatusText(task.status))
-                }
             }
         }
     }

@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.embag.tdatabasebatime.Model.Entity.RepeatType
 import com.embag.tdatabasebatime.Model.Entity.Schedule
 import com.embag.tdatabasebatime.Repository.AlgorithmRepository
 import com.embag.tdatabasebatime.Repository.AlgorithmResult
@@ -35,14 +36,16 @@ class AlgorithmViewModel(
     private val _estimatedSchedules = MutableStateFlow<List<ScheduleWithPriority>>(emptyList())
     val estimatedSchedules: StateFlow<List<ScheduleWithPriority>> = _estimatedSchedules
 
-    // 🆕 بارگیری خودکار در ابتدا
+    // اضافه کردن StateFlow جدید برای همه زمان‌بندی‌های روز
+    private val _allSchedulesForDate = MutableStateFlow<List<Schedule>>(emptyList())
+    val allSchedulesForDate: StateFlow<List<Schedule>> = _allSchedulesForDate
+
     init {
         viewModelScope.launch {
             loadDataForDate(_selectedDate.value)
         }
     }
 
-    // تغییر تاریخ
     fun setSelectedDate(date: LocalDate) {
         _selectedDate.value = date
         viewModelScope.launch {
@@ -50,16 +53,35 @@ class AlgorithmViewModel(
         }
     }
 
-    // بارگیری داده‌ها برای تاریخ انتخاب شده
     private fun loadDataForDate(date: LocalDate) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // بارگیری زمان‌های خالی
                 _freeSlots.value = algorithmRepository.calculateFreeSlots(date)
-
-                // بارگیری زمان‌بندی‌های ESTIMATED
                 _estimatedSchedules.value = algorithmRepository.getEstimatedSchedulesForDate(date)
+
+                // اضافه کردن بارگیری همه زمان‌بندی‌های روز
+                _allSchedulesForDate.value = algorithmRepository.getAllSchedulesForDate(date)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // در صورت خطا، لیست‌های خالی برگردان
+                _freeSlots.value = emptyList()
+                _estimatedSchedules.value = emptyList()
+                _allSchedulesForDate.value = emptyList()
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun runAlgorithm() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val result = algorithmRepository.runSchedulingAlgorithm(_selectedDate.value)
+                _algorithmResult.value = result
+
+                loadDataForDate(_selectedDate.value)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -68,21 +90,15 @@ class AlgorithmViewModel(
         }
     }
 
-    // اجرای الگوریتم
-    fun runAlgorithm() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val result = algorithmRepository.runSchedulingAlgorithm(_selectedDate.value)
-                _algorithmResult.value = result
-
-                // بارگیری مجدد داده‌ها
-                loadDataForDate(_selectedDate.value)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
-            }
+    // تابع کمکی برای گرفتن متن نوع تکرار
+    fun getRepeatTypeText(repeatType: RepeatType): String {
+        return when (repeatType) {
+            RepeatType.DAILY -> "روز"
+            RepeatType.WEEKLY -> "هفته"
+            RepeatType.MONTHLY -> "ماه"
+            RepeatType.YEARLY -> "سال"
+            RepeatType.CUSTOM_DAYS -> "روزهای مشخص"
+            else -> "بدون تکرار"
         }
     }
 }
