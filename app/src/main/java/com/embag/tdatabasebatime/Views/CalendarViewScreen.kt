@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.embag.tdatabasebatime.Model.Entity.RepeatType
 import com.embag.tdatabasebatime.Model.Entity.Schedule
+import com.embag.tdatabasebatime.Repository.ScheduleRecurrenceCalculator
 import com.embag.tdatabasebatime.ViewModel.TaskViewModel
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -65,8 +66,7 @@ fun CalendarViewScreen(
     val currentDate = remember { mutableStateOf(LocalDate.now()) }
     val schedulesForMonth by produceState (emptyList<Schedule>()) {
         viewModel.viewModelScope.launch {
-            // اینجا باید تابعی ایجاد کنیم که تمام زمان‌بندی‌های یک ماه را برگرداند
-            // فعلاً از تابع موجود استفاده می‌کنیم
+
             val allSchedules = viewModel.getAllSchedulesForDebug()
             value = allSchedules
         }
@@ -240,6 +240,7 @@ fun CalendarViewScreen(
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun isScheduleOccurringOnDate(schedule: Schedule, date: LocalDate): Boolean {
+    return ScheduleRecurrenceCalculator.isScheduleOccurringOnDate(schedule, date)
     // Check if schedule occurs on this date (including repeats)
     if (schedule.repeatType == RepeatType.NONE) {
         return schedule.scheduleDate == date

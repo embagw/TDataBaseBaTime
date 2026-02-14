@@ -23,8 +23,7 @@ class AlgorithmRepository(
         dayStart: LocalTime = LocalTime.of(0, 0),
         dayEnd: LocalTime = LocalTime.of(23, 59)
     ): List<Pair<LocalTime, LocalTime>> {
-        // حذف try-catch از اینجا و به سادگی return کنیم
-        // Get all schedules that occur on targetDate (including repeats)
+
         val allSchedules = scheduleDao.getAllSchedulesForAlgorithm()
 
         val scheduledTasks = allSchedules

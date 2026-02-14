@@ -580,7 +580,6 @@ fun AddEditScheduleScreen(
                                     selected = !hasRepeatEndDate && repeatCount.isNotEmpty(),
                                     onClick = {
                                         hasRepeatEndDate = false
-                                        repeatEndDate = null
                                     }
                                 )
 
@@ -594,6 +593,9 @@ fun AddEditScheduleScreen(
                                     selected = hasRepeatEndDate,
                                     onClick = {
                                         hasRepeatEndDate = true
+                                        if (repeatEndDate == null) {
+                                            repeatEndDate = LocalDate.now().plusMonths(1)
+                                        }
                                         repeatCount = ""
                                     }
                                 )
@@ -976,6 +978,8 @@ fun AddEditScheduleScreen(
                             }
                         }
                     }
+
+
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = when (scheduleType) {
@@ -983,7 +987,7 @@ fun AddEditScheduleScreen(
                     ScheduleType.EVENT -> title.isNotEmpty()
                     ScheduleType.ESTIMATED -> title.isNotEmpty() && estimatedMinutes.isNotEmpty() && estimatedMinutes.toLongOrNull() != null
                     ScheduleType.COUNT -> title.isNotEmpty() && count.isNotEmpty() && count.toIntOrNull() != null
-                }
+                }&& if (!hasRepeatEndDate) repeatCount.isNotBlank() && repeatCount.toIntOrNull() != null else true
             ) {
                 Text(if (isEditMode) "ذخیره تغییرات" else "ایجاد زمان‌بندی")
             }

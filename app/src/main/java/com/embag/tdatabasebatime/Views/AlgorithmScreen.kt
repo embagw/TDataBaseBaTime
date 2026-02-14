@@ -506,6 +506,7 @@ fun ResultCard(result: AlgorithmResult) {
         }
     }
 }
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AllScheduleItem(
     schedule: Schedule,

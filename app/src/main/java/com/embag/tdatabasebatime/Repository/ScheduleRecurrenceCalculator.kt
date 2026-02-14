@@ -131,15 +131,13 @@ object ScheduleRecurrenceCalculator {
 
         var count = 0
         var currentDate = startDate
-
-        // محدودیت برای جلوگیری از حلقه بی‌نهایت
-        val maxIterations = 10000
+        val maxIterations = 10000 // جلوگیری از حلقه بی‌نهایت
         var iteration = 0
 
         while (currentDate <= untilDate && iteration < maxIterations) {
             iteration++
 
-            // بررسی مستقیم بدون فراخوانی isScheduleOccurringOnDate
+            // بررسی اینکه آیا currentDate یک تکرار معتبر است
             val isOccurring = when (schedule.repeatType) {
                 RepeatType.DAILY -> {
                     val daysBetween = ChronoUnit.DAYS.between(startDate, currentDate)
@@ -150,14 +148,9 @@ object ScheduleRecurrenceCalculator {
                     if (weeksBetween % schedule.repeatInterval != 0L) false else {
                         val repeatDaysStr = schedule.repeatDaysOfWeek
                         if (!repeatDaysStr.isNullOrEmpty()) {
-                            val selectedDays = repeatDaysStr.split(",").map {
-                                try {
-                                    DayOfWeek.of(it.toInt())
-                                } catch (e: Exception) {
-                                    null
-                                }
-                            }.filterNotNull()
-
+                            val selectedDays = repeatDaysStr.split(",").mapNotNull {
+                                try { DayOfWeek.of(it.toInt()) } catch (e: Exception) { null }
+                            }
                             if (selectedDays.isEmpty()) {
                                 startDate.dayOfWeek == currentDate.dayOfWeek
                             } else {
@@ -195,15 +188,9 @@ object ScheduleRecurrenceCalculator {
                     }
                 }
                 RepeatType.CUSTOM_DAYS -> {
-                    val daysOfWeek = schedule.repeatDaysOfWeek?.split(",")?.map {
-                        try {
-                            DayOfWeek.of(it.toInt())
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }?.filterNotNull()
-
-                    // تغییر این خط - به جای return false، مقدار false برگردان
+                    val daysOfWeek = schedule.repeatDaysOfWeek?.split(",")?.mapNotNull {
+                        try { DayOfWeek.of(it.toInt()) } catch (e: Exception) { null }
+                    }
                     daysOfWeek?.contains(currentDate.dayOfWeek) ?: false
                 }
                 else -> false
@@ -213,15 +200,7 @@ object ScheduleRecurrenceCalculator {
                 count++
             }
 
-            // حرکت به تاریخ بعدی
-            currentDate = when (schedule.repeatType) {
-                RepeatType.DAILY -> currentDate.plusDays(1)
-                RepeatType.WEEKLY -> currentDate.plusWeeks(1)
-                RepeatType.MONTHLY -> currentDate.plusMonths(1)
-                RepeatType.YEARLY -> currentDate.plusYears(1)
-                RepeatType.CUSTOM_DAYS -> currentDate.plusDays(1)
-                else -> break
-            }
+            currentDate = currentDate.plusDays(1) // حرکت روزانه
         }
 
         return count

@@ -109,7 +109,7 @@ class BackupManager(private val context: Context) {
         }
     }
 
-    // **متد جدید: بستن دیتابیس Room**
+    // ** بستن دیتابیس Room**
     private fun closeDatabase() {
         try {
             // روش مستقیم برای بستن connection های SQLite
@@ -130,7 +130,7 @@ class BackupManager(private val context: Context) {
         }
     }
 
-    // **بازیابی از backup - کاملاً اصلاح شده**
+    // **بازیابی از backup**
     fun restoreFromBackup(backupFile: File): Boolean {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

@@ -80,7 +80,7 @@ fun MainScreen(
                     ) {
                         Icon(Icons.Default.CalendarToday, contentDescription = "تقویم")
                     }
-                    val isDebugMode = true // می‌توانید این را از BuildConfig بگیرید یا ثابت بگذارید
+                    val isDebugMode = true
 
                     if (isDebugMode) {
                         IconButton(
@@ -180,12 +180,12 @@ fun MainScreen(
                 0 -> TaskListScreen(
                     viewModel = viewModel,
                     onTaskClick = onTaskClick,
-//                    onAddTask = { /* حذف شده چون در FAB هست */ }
+//
                 )
                 1 -> ScheduleListScreen(
                     viewModel = viewModel,
                     onScheduleClick = onScheduleClick,
-//                    onAddSchedule = { /* حذف شده چون در FAB هست */ }
+//
                 )
             }
         }

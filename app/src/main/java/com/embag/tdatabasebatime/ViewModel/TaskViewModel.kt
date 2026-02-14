@@ -34,7 +34,6 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
 
-    // تغییر: از ScheduleWithTasks به جای ScheduleWithCalculatedPriority استفاده کنید
     private val _schedulesWithTasks = MutableStateFlow<List<ScheduleWithTasks>>(emptyList())
     val schedulesWithTasks: StateFlow<List<ScheduleWithTasks>> = _schedulesWithTasks.asStateFlow()
 
@@ -68,7 +67,7 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
 
     private fun loadAllData() {
         loadTasks()
-        loadSchedulesWithTasks() // تغییر نام این تابع
+        loadSchedulesWithTasks()
         loadTasksWithRelations()
         loadCategories()
         loadCategoriesWithTaskCount()
@@ -83,7 +82,6 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
         }
     }
 
-    // تغییر: این تابع را به loadSchedulesWithTasks تغییر دهید
     private fun loadSchedulesWithTasks() {
         viewModelScope.launch {
             repository.getSchedulesWithTasks().collect { scheduleList ->
@@ -152,7 +150,6 @@ class TaskViewModel(private val repository: TaskRepository,private val context: 
         }
     }
 
-    // متدهای Task
     @RequiresApi(Build.VERSION_CODES.O)
     fun createTask(
         categoryId: Long?,
